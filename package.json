@@ -1,0 +1,44 @@
+{
+  "name": "cached-resource",
+  "version": "0.0.1",
+  "description": "Http REST client which provides application ability to work without an internet connecion.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/m0n01i7h/cached-resource.git"
+  },
+  "keywords": [
+    "typescript",
+    "angular2",
+    "react",
+    "http",
+    "rest",
+    "resource",
+    "axios"
+  ],
+  "author": "Viktor Zhakhalov <zhakhalov@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/m0n01i7h/cached-resource/issues"
+  },
+  "homepage": "https://github.com/m0n01i7h/cached-resource#readme",
+  "dependencies": {
+    "axios": "^0.15.3",
+    "localforage": "^1.4.3",
+    "lodash": "^4.17.2",
+    "qs": "^6.3.0",
+    "url-pattern": "^1.0.3"
+  },
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-typings": "^2.0.4",
+    "gulp-util": "^3.0.7",
+    "typescript": "^2.1.4",
+    "typings": "^2.0.0",
+    "webpack": "^1.14.0",
+    "webpack-stream": "^3.2.0"
+  }
+}
