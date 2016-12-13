@@ -1,4 +1,13 @@
+import * as axios from 'axios';
+import * as UrlPattern from 'url-pattern';
+import * as _ from 'lodash';
+import * as localforage from 'localforage';
+import * as qs from 'qs';
+
+import { ResourceMetadata } from './metadata';
+
 /**
+ * @internal
  * Generates random alphanumeric string with given length.
  * @param {number} [length=12] - length of generated string.
  * @return random alphanumeric string.
@@ -20,8 +29,61 @@ export function randomString(length: number = 12) {
   return arr.join('');
 }
 
-export function enumerable(value: boolean) {
-    return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
-        descriptor.enumerable = value;
-    } as PropertyDecorator;
+/**
+   * Generates instance key from params
+   */
+export function getInstanceKey(config: ResourceMetadata, source: {}) {
+  return `instance?${qs.stringify(getParams(_.assign({}, config.params || {}), source))}`;
+}
+
+/**
+ * Generates instance key from params
+ */
+export function getActionKey(source: {}) {
+  return `action?${qs.stringify(source)}`;
+}
+
+/**
+ * Generates collection key from params
+ */
+export function getArrayKey(source: {}) {
+  return `array?${qs.stringify(source)}`;
+}
+
+/**
+ * Pick params from source according to bound params map
+ */
+export function getParams(params: {} = {}, source: {} = {}) {
+  return _.mapValues(params, param => _.isString(param) && _.startsWith(param, '@')
+    ? source[param.substring(1)]
+    : param
+  );
+}
+
+/**
+ * Generates url from url template, action params and action data
+ */
+export function getUrl(url: string, params: {}, source: {} = {}) {
+  params = getParams(params, source);
+  const pattern = new UrlPattern(url);
+  let result = pattern.stringify(params);
+  let query = _.omit(params, _.keys(pattern.match(result)));
+  query = _(query).omitBy(_.isUndefined).omitBy(_.isNull).value();
+
+  return result + (_.isEmpty(query) ? '' : `?${qs.stringify(query, { encode: false })}`);
+}
+
+/**
+ * Generates params object with filled missed fields with random string.
+ */
+export function getRandomParams(params: {} = {}, source: {} = {}) {
+  return _.defaults(
+    _.mapValues(params, param => _.isString(param) && _.startsWith(param, '@')
+      ? source[param.substring(1)]
+      : param
+    ),
+    _.mapValues(params, param => _.isString(param) && _.startsWith(param, '@')
+      ? randomString(24)
+      : param)
+  );
 }

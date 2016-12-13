@@ -3,7 +3,8 @@ import * as localforage from 'localforage';
 import * as _ from 'lodash';
 
 import { ResourceClass } from './resource';
-import { ActionMetadata, ResourceMetadata, ResourceTarget } from './interfaces';
+import { ResourceTarget } from './interfaces';
+import { ActionMetadata, ResourceMetadata } from './metadata';
 
 interface ResourceStatic {
   (config: ResourceMetadata): ClassDecorator;

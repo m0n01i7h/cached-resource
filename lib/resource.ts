@@ -4,14 +4,26 @@ import * as _ from 'lodash';
 import * as localforage from 'localforage';
 import * as qs from 'qs';
 
-import { ActionMetadata, ResourceMetadata, ResourceBase, ResourceInstance, ResourceArray } from './interfaces';
-import { randomString } from './utils';
+import { ActionMetadata, ResourceMetadata } from './metadata';
+import {
+  randomString,
+  getActionKey,
+  getArrayKey,
+  getInstanceKey,
+  getParams,
+  getRandomParams,
+  getUrl
+} from './utils';
 
-interface Action {
-  action: string;
-  cacheParams: {};
-  httpParams: {};
-}
+import {
+  ResourceBase,
+  ResourceInstance,
+  ResourceArray,
+  PendingAction
+} from './interfaces';
+
+import { SyncLock } from './lock';
+
 
 class Resource implements ResourceInstance {
 
@@ -28,7 +40,7 @@ class Resource implements ResourceInstance {
   public toObject() {
     return _({})
       .assign(this)
-      .omitBy((value, key) => /(^\$httpPromise|^\$storagePromise|^\$fromCache|^__|^\$\$)/.test(key))
+      .omitBy((value, key) => /(^\$httpPromise|^\$storagePromise|^\$fromCache|^\$removed|^__|^\$\$)/.test(key))
       .omitBy(_.isFunction)
       .value()
       ;
@@ -61,6 +73,7 @@ export class ResourceClass {
   private actions: { [key: string]: ActionMetadata } = {};
   private config: ResourceMetadata;
   private storage: LocalForage;
+  private sync = new SyncLock();
 
   public async init(config: ResourceMetadata) {
     this.config = config;
@@ -85,7 +98,7 @@ export class ResourceClass {
 
   private invoke(action: string, params: {} = {}, body: {} = {}, config?: ActionMetadata): ResourceBase {
     const actionConfig = _.assign({}, this.actions[action], config || {}) as ActionMetadata;
-    const url = this.getUrl(
+    const url = getUrl(
       actionConfig.url || this.config.url,
       _.assign({}, this.config.params || {}, actionConfig.params || {}, params),
       body
@@ -93,7 +106,7 @@ export class ResourceClass {
 
     const resource: ResourceList | Resource = actionConfig.isArray
       ? new ResourceList()
-      : new Resource(body)
+      : body instanceof Resource ? body : new Resource(body)
       ;
 
     if (actionConfig.localOnly) {
@@ -149,13 +162,21 @@ export class ResourceClass {
   }
 
   private invokePostAction(action: string, url: string, params: {} = {}, actionConfig: ActionMetadata, resource: ResourceBase) {
-    const cacheParams = this.getRandomParams(_.assign({}, this.config.params, params), resource);
-    const httpParams = this.getParams(_.assign({}, this.config.params, params), resource);
+    const cacheParams = getRandomParams(_.assign({}, this.config.params, params), resource);
+    const httpParams = getParams(_.assign({}, this.config.params, params), resource);
 
     if (!actionConfig.localOnly) {
       resource.$httpPromise = this.config.http.post(url, new Resource(resource).toRequestBody())
         .then(res => this.handleResponse(params, actionConfig, res.data, resource as Resource) as any)
-        .then(async () => this.replaceInArray(httpParams, cacheParams, resource as Resource))
+        .then(async () => {
+          // Do not remove instance if params was not a random one.
+          if (_.isEqual(getParams(_.assign({}, this.config.params, params), resource), cacheParams)) {
+            console.log(getParams(_.assign({}, this.config.params, params), resource), cacheParams, 'are equal. Skip removing from array');
+            return;
+          }
+          await this.replaceInArray(httpParams, cacheParams, resource as Resource);
+          await this.remove(cacheParams);
+        })
         .catch(err => this.handleResponseError(action, err, actionConfig, cacheParams, httpParams) as Promise<any>)
         ;
     }
@@ -168,11 +189,11 @@ export class ResourceClass {
   }
 
   private invokePutAction(action: string, url: string, params: {} = {}, actionConfig: ActionMetadata, resource: ResourceBase) {
-    const cacheParams = this.getRandomParams(_.assign({}, this.config.params, params), resource);
-    const httpParams = this.getParams(_.assign({}, this.config.params, params), resource);
+    const cacheParams = getRandomParams(_.assign({}, this.config.params, params), resource);
+    const httpParams = getParams(_.assign({}, this.config.params, params), resource);
 
     if (!actionConfig.localOnly) {
-      resource.$httpPromise = this.config.http.post(url, new Resource(resource).toRequestBody())
+      resource.$httpPromise = this.config.http.put(url, new Resource(resource).toRequestBody())
         .then(res => this.handleResponse(params, actionConfig, res.data, resource as Resource) as any)
         .catch(err => this.handleResponseError(action, err, actionConfig, cacheParams, httpParams) as Promise<any>)
         ;
@@ -186,6 +207,22 @@ export class ResourceClass {
   }
 
   private invokeDeleteAction(action: string, url: string, params: {} = {}, actionConfig: ActionMetadata, resource: ResourceBase) {
+    const cacheParams = getRandomParams(_.assign({}, this.config.params, params), resource);
+    const httpParams = getParams(_.assign({}, this.config.params, params), resource);
+
+    if (!actionConfig.localOnly) {
+      resource.$httpPromise = this.config.http.delete(url)
+        .then(res => this.remove(params) as any)
+        .then(() => _.assign(resource, { $removed: true }))
+        .catch(err => this.handleResponseError(action, err, actionConfig, cacheParams, httpParams) as Promise<any>)
+        ;
+    }
+
+    if (!actionConfig.httpOnly) {
+      resource.$storagePromise = this.removeFromArrays([resource])
+        .then(() => resource);
+    }
+
     return resource;
   }
 
@@ -193,18 +230,18 @@ export class ResourceClass {
    * Fill given resource with array of resource from cache by given params.
    */
   private async findAll(params: {} = {}, resource: ResourceList) {
-    const array: Array<any> = await this.storage.getItem<Array<any>>(this.getArrayKey(params));
+    const array: Array<any> = await this.storage.getItem<Array<any>>(getArrayKey(params));
 
     if (!array) {
-      throw new Error(`Array with params: '${JSON.stringify(this.getParams(this.config.params, params))}' not found in '${this.config.name}'.`);
+      throw new Error(`Array with params: '${JSON.stringify(getParams(this.config.params, params))}' not found in '${this.config.name}'.`);
     }
 
     for (let entry of array) {
       // create resource from item from storage
-      let item = await this.storage.getItem(this.getInstanceKey(entry));
+      let item = await this.storage.getItem(getInstanceKey(this.config, entry));
       item = new Resource(_.defaults(item, { $fromCache: true }));
 
-      const where = this.getParams(this.config.params, item);
+      const where = getParams(this.config.params, item);
       const element = _.find(resource, where);
 
       if (element) {
@@ -225,10 +262,10 @@ export class ResourceClass {
    * Fill given resource with instance from cache by given params.
    */
   private async findOne(params: {} = {}, resource: Resource) {
-    let item = await this.storage.getItem(this.getInstanceKey(params));
+    let item = await this.storage.getItem(getInstanceKey(this.config, params));
 
     if (!item) {
-      throw new Error(`Instance with params: '${JSON.stringify(this.getParams(this.config.params, params))}' not found in '${this.config.name}'.`);
+      throw new Error(`Instance with params: '${JSON.stringify(getParams(this.config.params, params))}' not found in '${this.config.name}'.`);
     }
 
     delete resource.$storagePromise;
@@ -238,17 +275,24 @@ export class ResourceClass {
   }
 
   private async save(httpParams: {} = {}, cacheParams: {} = {}, resource: ResourceBase) {
-    const arrayKey = this.getArrayKey(httpParams);
-    const instanceKey = this.getInstanceKey(cacheParams);
+    const arrayKey = getArrayKey(httpParams);
+    const instanceKey = getInstanceKey(this.config, cacheParams);
+
+    while (await this.sync.isLocked(arrayKey)) { }
+
+    // LOCK ARRAY
+    this.sync.lock(arrayKey);
 
     const array = await this.storage.getItem<Array<{}>>(arrayKey);
 
     // add new index to the array if the array does not contain
-    if (!_.find(array, cacheParams)) {
+    if (array && !_.find(array, cacheParams)) {
       array.push(cacheParams);
+      await this.storage.setItem(arrayKey, array);
     }
 
-    await this.storage.setItem(arrayKey, array);
+    // UNLOCK ARRAY
+    this.sync.release(arrayKey);
 
     // save new or update existing item in storage
     const item = await this.storage.getItem(instanceKey);
@@ -257,19 +301,58 @@ export class ResourceClass {
     return resource;
   }
 
-  private async remove(params: {}, resource: Resource) {
+  private async remove(params: {}) {
+    const instanceKey = getInstanceKey(this.config, params);
+    await this.storage.removeItem(instanceKey);
+  }
 
+  private async removeFromArrays(params: Array<{}>) {
+    const arrayKeys = _(await this.storage.keys()).filter(key => /^array/.test(key)).value();
+
+    for (let arrayKey of arrayKeys) {
+      while (await this.sync.isLocked(arrayKey)) { }
+
+      // LOCK ARRAY
+      this.sync.lock(arrayKey);
+
+      const array = await this.storage.getItem<Array<{}>>(arrayKey);
+
+      for (let param of params) {
+        _.remove(array, entry => _.isEqual(entry, param));
+      }
+
+      await this.storage.setItem(arrayKey, array);
+
+      // UNLOCK ARRAY
+      this.sync.release(arrayKey);
+    }
   }
 
   private async replaceInArray(httpParams: {}, cacheParams: {}, resource: Resource) {
-    const arrayKey = this.getArrayKey(httpParams);
-    const array = await this.storage.getItem<Array<{}>>(arrayKey) || [];
+    const arrayKey = getArrayKey(httpParams);
 
-    _.remove(array, entry => _.isEqual(entry, cacheParams));
-    array.push(this.getParams(_.assign({}, this.config.params || {}), resource));
+    while (await this.sync.isLocked(arrayKey)) { }
 
-    await this.storage.setItem(arrayKey, array);
-    await this.storage.removeItem(this.getInstanceKey(cacheParams));
+    // LOCK ARRAY
+    this.sync.lock(arrayKey);
+
+    const array = await this.storage.getItem<Array<{}>>(arrayKey);
+
+    if (array) {
+      _.remove(array, entry => _.isEqual(entry, cacheParams));
+
+      cacheParams = getParams(_.assign({}, this.config.params || {}), resource);
+
+      // If array does not contain resource params add them.
+      if (!_.some(array, entry => _.isEqual(entry, cacheParams))) {
+        array.push(cacheParams);
+      }
+
+      await this.storage.setItem(arrayKey, array);
+    }
+
+    // UNLOCK ARRAY
+    this.sync.release(arrayKey);
 
     return resource;
   }
@@ -289,7 +372,7 @@ export class ResourceClass {
 
     delete resource.$httpPromise;
 
-    return this.handleInstanceResponse(data, resource as Resource);
+    return this.handleInstanceResponse(params, data, resource as Resource);
   }
 
   private async handleArrayResponse(params: {}, config: ActionMetadata, data: Array<{}>, resource: ResourceList) {
@@ -297,7 +380,7 @@ export class ResourceClass {
     for (let entry of data) {
       _.assign(entry, { $fromCache: false });
 
-      let instance = _.find(resource, this.getParams(this.config.params, entry));
+      let instance = _.find(resource, getParams(this.config.params, entry));
 
       if (instance) {
         _.assign(instance, entry);
@@ -307,12 +390,12 @@ export class ResourceClass {
 
       // do not save anything to cache if action is httpOnly
       if (!config.httpOnly) {
-        let item = await this.storage.getItem(this.getInstanceKey(entry));
+        let item = await this.storage.getItem(getInstanceKey(this.config, entry));
         // override all fields of item excluding localOnly values and save to storage
         item = _.assign(item || {}, entry);
 
         await this.storage.setItem(
-          this.getInstanceKey(entry),
+          getInstanceKey(this.config, entry),
           new Resource(item).toObject()
         );
       }
@@ -322,8 +405,8 @@ export class ResourceClass {
     if (!config.httpOnly) {
       // save or update array
       this.storage.setItem(
-        this.getArrayKey(params),
-        (data as Array<any>).map(entry => this.getParams(_.assign({}, params, this.config.params || {}), entry))
+        getArrayKey(params),
+        (data as Array<any>).map(entry => getParams(_.assign({}, params, this.config.params || {}), entry))
       );
     }
 
@@ -334,7 +417,7 @@ export class ResourceClass {
 
     // add elements to resource according in save order as responded array
     for (let entry of data as Array<{}>) {
-      const element = _.find(temp, this.getParams(this.config.params, entry));
+      const element = _.find(temp, getParams(this.config.params, entry));
       resource.push(element);
     }
 
@@ -344,11 +427,30 @@ export class ResourceClass {
     return resource;
   }
 
-  private async handleInstanceResponse(data: {} | Array<{}>, resource: Resource) {
+  private async handleInstanceResponse(params: {}, data: {}, resource: Resource) {
     _.assign(resource, data, { $fromCache: false });
 
-    const item = await this.storage.getItem(this.getInstanceKey(resource));
-    await this.storage.setItem(this.getInstanceKey(resource), _.assign(item || {}, resource.toObject()));
+    const instanceKey = getInstanceKey(this.config, resource);
+    const cacheParams = getParams(this.config.params, resource);
+    const arrayKey = getArrayKey(params);
+
+    const item = await this.storage.getItem(instanceKey);
+    await this.storage.setItem(instanceKey, _.assign(item || {}, resource.toObject()));
+
+    while (await this.sync.isLocked(arrayKey));
+
+    // LOCK ARRAY
+    this.sync.lock(arrayKey);
+
+    const array = await this.storage.getItem<Array<{}>>(arrayKey);
+
+    // if array exists and does not contain cacheParams
+    if (array && !_.some(array, entry => _.isEqual(entry, cacheParams))) {
+      array.push(cacheParams);
+      await this.storage.setItem(arrayKey, array);
+    }
+
+    this.sync.release(arrayKey);
 
     return resource;
   }
@@ -363,12 +465,12 @@ export class ResourceClass {
     // save pending action if request was valid
     if (!err.status || err.status < 400 || err.status > 499) {
       await this.storage.setItem(
-        this.getActionKey(cacheParams),
+        getActionKey(cacheParams),
         {
           action: action,
           httpParams: httpParams,
           cacheParams: cacheParams
-        } as Action
+        } as PendingAction
       );
     }
 
@@ -377,83 +479,30 @@ export class ResourceClass {
   }
 
   private async checkPendingActions() {
-    const keys = _(await this.storage.keys()).filter(key => /^action/.test(key)).value();
+    const actionKeys = _(await this.storage.keys()).filter(key => /^action/.test(key)).value();
+    const deleted = [];
 
-    const actions = keys.map(async (key: string) => {
-      const action = await this.storage.getItem<Action>(key);
-      const item = await this.storage.getItem(this.getInstanceKey(action.cacheParams));
+    const actions = actionKeys.map(async (actionKey: string) => {
+      const action = await this.storage.getItem<PendingAction>(actionKey);
+      const instanceKey = getInstanceKey(this.config, action.cacheParams);
+      const instance = await this.storage.getItem(instanceKey);
 
-      if (!item) {
-        return await this.storage.removeItem(key);
+      if (!instance) {
+        return await this.storage.removeItem(actionKey);
       }
 
-      const resource = await this.invoke(action.action, action.httpParams, item, { httpOnly: true } as ActionMetadata);
-      resource.$storagePromise.catch(() => {});
+      const resource = await this.invoke(action.action, action.httpParams, instance, { httpOnly: true } as ActionMetadata);
+      resource.$storagePromise.catch(() => { });
 
       await resource.$httpPromise;
-      await this.storage.removeItem(key);
-      await this.storage.removeItem(this.getInstanceKey(action.cacheParams));
+      await this.storage.removeItem(actionKey);
+      await this.storage.removeItem(instanceKey);
+
+      deleted.push(action.cacheParams);
     });
 
-    return Promise.all(actions);
-  }
+    await Promise.all(actions);
 
-  /**
-   * Generates instance key from params
-   */
-  private getInstanceKey(source: {}) {
-    return `instance?${qs.stringify(this.getParams(_.assign({}, this.config.params || {}), source))}`;
-  }
-
-  /**
-   * Generates instance key from params
-   */
-  private getActionKey(source: {}) {
-    return `action?${qs.stringify(source)}`;
-  }
-
-  /**
-   * Generates collection key from params
-   */
-  private getArrayKey(source: {}) {
-    return `array?${qs.stringify(source)}`;
-  }
-
-  /**
-   * Pick params from source according to bound params map
-   */
-  private getParams(params: {} = {}, source: {} = {}) {
-    return _.mapValues(params, param => _.isString(param) && _.startsWith(param, '@')
-      ? source[param.substring(1)]
-      : param
-    );
-  }
-
-  /**
-   * Generates url from url template, action params and action data
-   */
-  private getUrl(url: string, params: {}, source: {} = {}) {
-    params = this.getParams(params, source);
-    const pattern = new UrlPattern(url);
-    let result = pattern.stringify(params);
-    let query = _.omit(params, _.keys(pattern.match(result)));
-    query = _(query).omitBy(_.isUndefined).omitBy(_.isNull).value();
-
-    return result + (_.isEmpty(query) ? '' : `?${qs.stringify(query, { encode: false })}`);
-  }
-
-  /**
-   * Generates params object with filled missed fields with random string.
-   */
-  private getRandomParams(params: {} = {}, source: {} = {}) {
-    return _.defaults(
-      _.mapValues(params, param => _.isString(param) && _.startsWith(param, '@')
-        ? source[param.substring(1)]
-        : param
-      ),
-      _.mapValues(params, param => _.isString(param) && _.startsWith(param, '@')
-        ? randomString(24)
-        : param)
-    );
+    await this.removeFromArrays(deleted);
   }
 }
