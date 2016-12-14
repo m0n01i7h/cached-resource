@@ -24,3 +24,5 @@ export class SyncLock {
     return _.some(this.locks, lock => _.isEqual(lock, context));
   }
 }
+
+export const sync = new SyncLock();

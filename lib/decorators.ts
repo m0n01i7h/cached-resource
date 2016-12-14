@@ -2,8 +2,8 @@ import * as axios from 'axios';
 import * as localforage from 'localforage';
 import * as _ from 'lodash';
 
-import { ResourceClass } from './resource';
-import { ResourceTarget } from './interfaces';
+import { ResourceClass } from './resourceClass';
+import { ResourceTarget } from './abstract';
 import { ActionMetadata, ResourceMetadata } from './metadata';
 
 interface ResourceStatic {
