@@ -159,13 +159,17 @@ export class ResourceClass {
   }
 
   private invokeDeleteAction(action: string, url: string, params: {} = {}, actionConfig: ActionMetadata, resource: ResourceBase) {
-    const cacheParams = getRandomParams(_.assign({}, this.config.params, params), resource);
+    const cacheParams = getParams(this.config.params, resource);
     const httpParams = getParams(_.assign({}, this.config.params, params), resource);
 
     if (!actionConfig.localOnly) {
       resource.$httpPromise = this.config.http.delete(url)
-        .then(res => this.cache.remove(params) as any)
-        .then(() => _.assign(resource, { $removed: true }))
+        .then(async (res) => {
+          await this.cache.removeFromArrays([cacheParams]);
+          await this.cache.remove(cacheParams);
+          _.assign(resource, { $removed: true });
+          return resource;
+        })
         .catch(err => this.handleResponseError(action, err, actionConfig, cacheParams, httpParams) as Promise<any>)
         ;
     }

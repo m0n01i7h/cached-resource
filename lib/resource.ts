@@ -39,7 +39,7 @@ export class Resource implements ResourceInstance {
   }
 }
 
-export class ResourceList extends Array implements ResourceArray {
+export class ResourceList extends Array<ResourceInstance> implements ResourceArray {
   public $storagePromise: Promise<this>;
   public $httpPromise: Promise<this>;
 
