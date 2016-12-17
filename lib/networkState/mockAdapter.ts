@@ -4,6 +4,8 @@ import { NetworkStateAdapter } from '../abstract';
  */
 export class MockNetworkStateAdapter implements NetworkStateAdapter {
 
+  private onLine = false;
+
   private onlineHandler: () => void;
   private offlineHandler: () => void;
 
@@ -12,7 +14,7 @@ export class MockNetworkStateAdapter implements NetworkStateAdapter {
   }
 
   public get isOnline() {
-    return window.navigator.onLine;
+    return this.onLine;
   }
 
   public setOnlineHandler(handler: () => void) {
@@ -24,12 +26,14 @@ export class MockNetworkStateAdapter implements NetworkStateAdapter {
   }
 
   public setOnline() {
+    this.onLine = true;
     if (this.onlineHandler) {
       this.onlineHandler();
     }
   }
 
   public setOffline() {
+    this.onLine = false;
     if (this.offlineHandler) {
       this.offlineHandler();
     }

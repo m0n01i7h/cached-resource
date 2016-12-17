@@ -70,8 +70,9 @@ export class Cache {
     const arrayKey = getArrayKey(httpParams);
     const instanceKey = getInstanceKey(this.config, cacheParams);
 
-    while (await this.sync.isLocked(arrayKey)) { }
-
+    if (this.sync.isLocked(arrayKey)) {
+      await this.sync.isLockedAsync(arrayKey);
+    }
     try {
       // LOCK ARRAY
       this.sync.lock(arrayKey);
@@ -124,7 +125,9 @@ export class Cache {
     const arrayKeys = _(await this.storage.keys()).filter(key => /^array/.test(key)).value();
 
     for (let arrayKey of arrayKeys) {
-      while (await this.sync.isLocked(arrayKey)) { }
+      if (this.sync.isLocked(arrayKey)) {
+        await this.sync.isLockedAsync(arrayKey);
+      }
 
       try {
         // LOCK ARRAY
@@ -147,7 +150,9 @@ export class Cache {
   public async replaceInArray(httpParams: {}, cacheParams: {}, resource: Resource) {
     const arrayKey = getArrayKey(httpParams);
 
-    while (await this.sync.isLocked(arrayKey)) { }
+    if (this.sync.isLocked(arrayKey)) {
+      await this.sync.isLockedAsync(arrayKey);
+    }
 
     try {
       // LOCK ARRAY

@@ -16,6 +16,8 @@ import {
 
 import {
   ResourceBase,
+  ResourceInstance,
+  ResourceArray,
   PendingAction
 } from './abstract';
 
@@ -95,8 +97,10 @@ export class ResourceClass {
   private invokeGetAction(url: string, params: {} = {}, actionConfig: ActionMetadata, resource: Resource | ResourceList) {
 
     if (!actionConfig.localOnly) {
-      resource.$httpPromise = this.config.http.get(url)
-        .then(res => this.handleResponse(params, actionConfig, res.data, resource) as any)
+      resource.$httpPromise = this.config.networkState.isOnline
+        ? this.config.http.get(url)
+          .then(res => this.handleResponse(params, actionConfig, res.data, resource) as any)
+        : Promise.reject<any>(new Error('Offline'))
         ;
     }
 
@@ -110,23 +114,34 @@ export class ResourceClass {
     return resource;
   }
 
-  private invokePostAction(action: string, url: string, params: {} = {}, actionConfig: ActionMetadata, resource: ResourceBase) {
+  private invokePostAction(action: string, url: string, params: {} = {}, actionConfig: ActionMetadata, resource: ResourceInstance) {
     const cacheParams = getRandomParams(_.assign({}, this.config.params, params), resource);
     const httpParams = getParams(_.assign({}, this.config.params, params), resource);
 
+    // Resource is new one
+    if (!_.isEqual(getParams(_.assign({}, this.config.params, params), resource), cacheParams)) {
+      resource.$new = true;
+      resource.$query = cacheParams;
+    }
+
     if (!actionConfig.localOnly) {
-      resource.$httpPromise = this.config.http.post(url, new Resource(resource).toRequestBody())
-        .then(async (res) => {
-          await this.handleResponse(params, actionConfig, res.data, resource as Resource);
-          // Do not remove instance if params was not a random one.
-          if (_.isEqual(getParams(_.assign({}, this.config.params, params), resource), cacheParams)) {
-            console.log(getParams(_.assign({}, this.config.params, params), resource), cacheParams, 'are equal. Skip removing from array');
-            return;
-          }
-          await this.cache.replaceInArray(httpParams, cacheParams, resource as Resource);
-          await this.cache.remove(cacheParams);
-        })
-        .catch(err => this.handleResponseError(action, err, actionConfig, cacheParams, httpParams) as Promise<any>)
+      resource.$httpPromise = this.config.networkState.isOnline
+        ? this.config.http.post(url, new Resource(resource).toRequestBody())
+          .then(async (res) => {
+            delete resource.$new;
+            delete resource.$query;
+            await this.handleResponse(params, actionConfig, res.data, resource as Resource);
+
+            // Do not remove instance if resource was not a new one.
+            if (_.isEqual(getParams(_.assign({}, this.config.params, params), resource), cacheParams)) {
+              return;
+            }
+
+            await this.cache.replaceInArray(httpParams, cacheParams, resource as Resource);
+            await this.cache.remove(cacheParams);
+          })
+          .catch(err => this.enqueueAction(action, err, actionConfig, cacheParams, httpParams) as Promise<any>)
+        : this.enqueueAction(action, new Error('Offline') as any, actionConfig, cacheParams, httpParams) as Promise<any>
         ;
     }
 
@@ -142,9 +157,11 @@ export class ResourceClass {
     const httpParams = getParams(_.assign({}, this.config.params, params), resource);
 
     if (!actionConfig.localOnly) {
-      resource.$httpPromise = this.config.http.put(url, new Resource(resource).toRequestBody())
-        .then(res => this.handleResponse(params, actionConfig, res.data, resource as Resource) as any)
-        .catch(err => this.handleResponseError(action, err, actionConfig, cacheParams, httpParams) as Promise<any>)
+      resource.$httpPromise = this.config.networkState.isOnline
+        ? this.config.http.put(url, new Resource(resource).toRequestBody())
+          .then(res => this.handleResponse(params, actionConfig, res.data, resource as Resource) as any)
+          .catch(err => this.enqueueAction(action, err, actionConfig, cacheParams, httpParams) as Promise<any>)
+        : this.enqueueAction(action, new Error('Offline') as any, actionConfig, cacheParams, httpParams) as Promise<any>
         ;
     }
 
@@ -155,24 +172,35 @@ export class ResourceClass {
     return resource;
   }
 
-  private invokeDeleteAction(action: string, url: string, params: {} = {}, actionConfig: ActionMetadata, resource: ResourceBase) {
+  private invokeDeleteAction(action: string, url: string, params: {} = {}, actionConfig: ActionMetadata, resource: ResourceInstance) {
+    console.log('delete', arguments);
     const cacheParams = getParams(this.config.params, resource);
     const httpParams = getParams(_.assign({}, this.config.params, params), resource);
 
     if (!actionConfig.localOnly) {
-      resource.$httpPromise = this.config.http.delete(url)
-        .then(async (res) => {
-          await this.cache.removeFromArrays([cacheParams]);
-          await this.cache.remove(cacheParams);
-          _.assign(resource, { $removed: true });
-          return resource;
-        })
-        .catch(err => this.handleResponseError(action, err, actionConfig, cacheParams, httpParams) as Promise<any>)
-        ;
+      if (this.config.networkState.isOnline) {
+        resource.$httpPromise = this.config.http.delete(url)
+          .then(async (res) => {
+            await this.cache.removeFromArrays([resource.$query || cacheParams]);
+            await this.cache.remove(cacheParams);
+            _.assign(resource, { $removed: true });
+            return resource;
+          })
+          .catch(err => this.enqueueAction(action, err, actionConfig, cacheParams, httpParams) as Promise<any>)
+      } else {
+        resource.$httpPromise = resource.$new
+          ? Promise.all([
+            this.cache.remove(resource.$query),
+            this.scheduler.removeAction(resource.$query),
+            this.cache.removeFromArrays([resource.$query])
+          ])
+          : this.enqueueAction(action, new Error('Offline') as any, actionConfig, cacheParams, httpParams) as Promise<any>
+          ;
+      }
     }
 
     if (!actionConfig.httpOnly) {
-      resource.$storagePromise = this.cache.removeFromArrays([resource])
+      resource.$storagePromise = this.cache.removeFromArrays([cacheParams])
         .then(() => resource);
     }
 
@@ -239,7 +267,7 @@ export class ResourceClass {
     return config.httpOnly ? resource : this.cache.saveOne(httpParams, cacheParams, resource);
   }
 
-  private async handleResponseError(action: string, err: Axios.AxiosXHR<any>, actionConfig: ActionMetadata, cacheParams: {}, httpParams: {}) {
+  private async enqueueAction(action: string, err: Axios.AxiosXHR<any>, actionConfig: ActionMetadata, cacheParams: {}, httpParams: {}) {
 
     // skip adding pending action for httpOnly actions
     if (actionConfig.httpOnly) {
@@ -248,7 +276,7 @@ export class ResourceClass {
 
     // save pending action if request was valid
     if (!err.status || err.status < 400 || err.status > 499) {
-      await this.scheduler.addPendingAction(cacheParams, {
+      await this.scheduler.addAction(cacheParams, {
         action: action,
         httpParams: httpParams,
         cacheParams: cacheParams

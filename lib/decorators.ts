@@ -17,7 +17,8 @@ function resource(config: ResourceMetadata): ClassDecorator {
     const resourceTarget: ResourceTarget = target.prototype;
     const resource = resourceTarget.$resource = resourceTarget.$resource || new ResourceClass();
 
-    resource.init(_.defaults<ResourceMetadata>(config, Resource.defaults, { name: target['name'] }));
+    // Init resource on next tick.
+    Promise.resolve().then(() => resource.init(_.defaults<ResourceMetadata>(config, Resource.defaults, { name: target['name'] })));
   };
 }
 

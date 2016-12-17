@@ -5,7 +5,7 @@ export class SyncLock {
   private locks: Array<any> = [];
 
   public lock(context: any) {
-    if (this.hasLock(context)) {
+    if (this.isLocked(context)) {
       return;
     }
 
@@ -16,11 +16,19 @@ export class SyncLock {
     _.remove(this.locks, lock => _.isEqual(lock, context));
   }
 
-  public isLocked(context: any) {
-    return Promise.resolve(this.hasLock(context));
+  public isLockedAsync(context: any) {
+    return new Promise(resolve => {
+      const checkLock = () => {
+        if (!this.isLocked(context)) {
+          return resolve();
+        }
+        setTimeout(() => checkLock(), 0);
+      };
+      checkLock();
+    });
   }
 
-  private hasLock(context: any) {
+  public isLocked(context: any) {
     return _.some(this.locks, lock => _.isEqual(lock, context));
   }
 }

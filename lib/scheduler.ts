@@ -8,7 +8,7 @@ import { ActionMetadata, ResourceMetadata } from './metadata';
 
 export class ActionsScheduler {
 
-  private intervalId: NodeJS.Timer;
+  private intervalId: any;
 
   constructor(
     private storage: LocalForage,
@@ -16,7 +16,10 @@ export class ActionsScheduler {
     private resource: ResourceClass,
     private cache: Cache
   ) {
-    this.checkPendingActions();
+    if (this.config.networkState.isOnline) {
+      this.enableAttempts();
+      this.checkPendingActions();
+    }
 
     this.config.networkState.setOnlineHandler(() => {
       this.checkPendingActions();
@@ -60,8 +63,12 @@ export class ActionsScheduler {
     await this.cache.removeFromArrays(deleted);
   }
 
-  public async addPendingAction(cacheParams: {}, action: PendingAction) {
+  public async addAction(cacheParams: {}, action: PendingAction) {
     await this.storage.setItem(getActionKey(cacheParams), action);
+  }
+
+  public async removeAction(cacheParams: {}) {
+    await this.storage.removeItem(getActionKey(cacheParams));
   }
 
   private enableAttempts() {
