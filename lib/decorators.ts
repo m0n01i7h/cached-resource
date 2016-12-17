@@ -3,6 +3,7 @@ import * as localforage from 'localforage';
 import * as _ from 'lodash';
 
 import { ResourceClass } from './resourceClass';
+import { BrowserNetworkStateAdapter } from './networkState/browserAdapter';
 import { ResourceTarget } from './abstract';
 import { ActionMetadata, ResourceMetadata } from './metadata';
 
@@ -33,5 +34,7 @@ export const Resource: ResourceStatic = resource;
 Resource.defaults = {
   url: '',
   http: axios,
-  driver: localforage.LOCALSTORAGE
+  driver: localforage.LOCALSTORAGE,
+  networkState: new BrowserNetworkStateAdapter(),
+  reattemptInterval: 60000
 };

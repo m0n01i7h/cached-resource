@@ -23,6 +23,7 @@ import { Resource, ResourceList } from './resource';
 
 import { SyncLock } from './lock';
 import { Cache } from './cache';
+import { ActionsScheduler } from './scheduler';
 
 export class ResourceClass {
 
@@ -30,6 +31,7 @@ export class ResourceClass {
   private config: ResourceMetadata;
   private storage: LocalForage;
   private cache: Cache;
+  private scheduler: ActionsScheduler;
   private sync = new SyncLock();
 
   public async init(config: ResourceMetadata) {
@@ -42,12 +44,7 @@ export class ResourceClass {
     });
 
     this.cache = new Cache(this.sync, this.config, this.storage);
-
-    try {
-      await this.checkPendingActions();
-    } catch (err) {
-      console.warn(err);
-    }
+    this.scheduler = new ActionsScheduler(this.storage, this.config, this, this.cache);
   }
 
   public addAction(name: string, config: ActionMetadata): Function {
@@ -55,7 +52,7 @@ export class ResourceClass {
     return (params, body, config) => this.invoke(name, params, body, config);
   }
 
-  private invoke(action: string, params: {} = {}, body: {} = {}, config?: ActionMetadata): ResourceBase {
+  public invoke(action: string, params: {} = {}, body: {} = {}, config?: ActionMetadata): ResourceBase {
     const actionConfig = _.assign({}, this.actions[action], config || {}) as ActionMetadata;
     const url = getUrl(
       actionConfig.url || this.config.url,
@@ -251,45 +248,14 @@ export class ResourceClass {
 
     // save pending action if request was valid
     if (!err.status || err.status < 400 || err.status > 499) {
-      await this.storage.setItem(
-        getActionKey(cacheParams),
-        {
-          action: action,
-          httpParams: httpParams,
-          cacheParams: cacheParams
-        } as PendingAction
-      );
+      await this.scheduler.addPendingAction(cacheParams, {
+        action: action,
+        httpParams: httpParams,
+        cacheParams: cacheParams
+      } as PendingAction);
     }
 
     // rethrow rejection
     throw err;
-  }
-
-  private async checkPendingActions() {
-    const actionKeys = _(await this.storage.keys()).filter(key => /^action/.test(key)).value();
-    const deleted = [];
-
-    const actions = actionKeys.map(async (actionKey: string) => {
-      const action = await this.storage.getItem<PendingAction>(actionKey);
-      const instanceKey = getInstanceKey(this.config, action.cacheParams);
-      const instance = await this.storage.getItem(instanceKey);
-
-      if (!instance) {
-        return await this.storage.removeItem(actionKey);
-      }
-
-      const resource = await this.invoke(action.action, action.httpParams, instance, { httpOnly: true } as ActionMetadata);
-      resource.$storagePromise.catch(() => { });
-
-      await resource.$httpPromise;
-      await this.storage.removeItem(actionKey);
-      await this.storage.removeItem(instanceKey);
-
-      deleted.push(action.cacheParams);
-    });
-
-    await Promise.all(actions);
-
-    await this.cache.removeFromArrays(deleted);
   }
 }

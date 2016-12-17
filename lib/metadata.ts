@@ -1,3 +1,5 @@
+import { NetworkStateAdapter } from './abstract';
+
 export interface ResourceMetadata {
   url: string;
   params?: {};
@@ -5,6 +7,8 @@ export interface ResourceMetadata {
   name?: string;
   driver?: string | LocalForageDriver | LocalForageDriver[];
   autoCompact?: boolean;
+  networkState?: NetworkStateAdapter;
+  reattemptInterval?: number;
 }
 
 export interface ActionMetadata {

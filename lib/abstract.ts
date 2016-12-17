@@ -22,3 +22,9 @@ export interface PendingAction {
   cacheParams: {};
   httpParams: {};
 }
+
+export interface NetworkStateAdapter {
+  readonly isOnline: boolean;
+  setOnlineHandler(handler: () => void): void;
+  setOfflineHandler(handler: () => void): void;
+}
