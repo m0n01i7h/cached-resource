@@ -73,6 +73,7 @@ export class Cache {
     if (this.sync.isLocked(arrayKey)) {
       await this.sync.isLockedAsync(arrayKey);
     }
+
     try {
       // LOCK ARRAY
       this.sync.lock(arrayKey);
@@ -184,7 +185,22 @@ export class Cache {
   /**
    * Remove all instances which are not constitute in any array
    */
-  public compact() {
+  public async compact() {
+    console.log('compact');
+    let keys = await this.storage.keys();
+    const arrayKeys = keys.filter(key => /^array/.test(key));
+    const arrays = await Promise.all(arrayKeys.map(key => this.storage.getItem<Array<{}>>(key)));
 
+    const queries = _(arrays)
+      .flatten()
+      .map(query => getInstanceKey(this.config, query))
+      .uniq()
+      .value();
+
+    const abandonedInstanceKeys = keys
+      .filter(key => /^instance/.test(key))
+      .filter(key => !_(queries).some(query => query === key));
+
+    await Promise.all(abandonedInstanceKeys.map(key => this.storage.removeItem(key)));
   }
 }

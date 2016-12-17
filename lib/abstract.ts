@@ -2,6 +2,7 @@ import { ResourceClass } from './resourceClass';
 
 export interface ResourceTarget {
   $resource: ResourceClass;
+  $compact: () => Promise<void>;
 }
 
 export interface ResourceBase {

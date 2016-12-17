@@ -94,12 +94,18 @@ export class ResourceClass {
     return resource;
   }
 
+  public async compact() {
+    return this.cache.compact();
+  }
+
   private invokeGetAction(url: string, params: {} = {}, actionConfig: ActionMetadata, resource: Resource | ResourceList) {
 
     if (!actionConfig.localOnly) {
       resource.$httpPromise = this.config.networkState.isOnline
+        // Perform request if online
         ? this.config.http.get(url)
           .then(res => this.handleResponse(params, actionConfig, res.data, resource) as any)
+        // Otherwise create pending action
         : Promise.reject<any>(new Error('Offline'))
         ;
     }
@@ -126,6 +132,7 @@ export class ResourceClass {
 
     if (!actionConfig.localOnly) {
       resource.$httpPromise = this.config.networkState.isOnline
+        // Perform request if online
         ? this.config.http.post(url, new Resource(resource).toRequestBody())
           .then(async (res) => {
             delete resource.$new;
@@ -141,6 +148,7 @@ export class ResourceClass {
             await this.cache.remove(cacheParams);
           })
           .catch(err => this.enqueueAction(action, err, actionConfig, cacheParams, httpParams) as Promise<any>)
+        // Otherwise create pending action
         : this.enqueueAction(action, new Error('Offline') as any, actionConfig, cacheParams, httpParams) as Promise<any>
         ;
     }
@@ -158,9 +166,11 @@ export class ResourceClass {
 
     if (!actionConfig.localOnly) {
       resource.$httpPromise = this.config.networkState.isOnline
+        // Perform request if online
         ? this.config.http.put(url, new Resource(resource).toRequestBody())
           .then(res => this.handleResponse(params, actionConfig, res.data, resource as Resource) as any)
           .catch(err => this.enqueueAction(action, err, actionConfig, cacheParams, httpParams) as Promise<any>)
+        // Otherwise create pending action
         : this.enqueueAction(action, new Error('Offline') as any, actionConfig, cacheParams, httpParams) as Promise<any>
         ;
     }
@@ -172,14 +182,20 @@ export class ResourceClass {
     return resource;
   }
 
-  private invokeDeleteAction(action: string, url: string, params: {} = {}, actionConfig: ActionMetadata, resource: ResourceInstance) {
-    console.log('delete', arguments);
+  private invokeDeleteAction(action: string, url: string, params: {} = {}, actionConfig: ActionMetadata, resource: ResourceInstance = {}) {
     const cacheParams = getParams(this.config.params, resource);
     const httpParams = getParams(_.assign({}, this.config.params, params), resource);
 
-    if (!actionConfig.localOnly) {
-      if (this.config.networkState.isOnline) {
-        resource.$httpPromise = this.config.http.delete(url)
+    if (resource.$new || actionConfig.localOnly) {
+      resource.$httpPromise = Promise.all([
+        this.cache.remove(resource.$query || cacheParams),
+        this.scheduler.removeAction(resource.$query || cacheParams),
+        this.cache.removeFromArrays([resource.$query || cacheParams])
+      ]);
+    } else {
+      resource.$httpPromise = this.config.networkState.isOnline
+        // Perform request if online
+        ? this.config.http.delete(url)
           .then(async (res) => {
             await this.cache.removeFromArrays([resource.$query || cacheParams]);
             await this.cache.remove(cacheParams);
@@ -187,20 +203,14 @@ export class ResourceClass {
             return resource;
           })
           .catch(err => this.enqueueAction(action, err, actionConfig, cacheParams, httpParams) as Promise<any>)
-      } else {
-        resource.$httpPromise = resource.$new
-          ? Promise.all([
-            this.cache.remove(resource.$query),
-            this.scheduler.removeAction(resource.$query),
-            this.cache.removeFromArrays([resource.$query])
-          ])
-          : this.enqueueAction(action, new Error('Offline') as any, actionConfig, cacheParams, httpParams) as Promise<any>
-          ;
-      }
+        // Otherwise create pending action
+        : this.enqueueAction(action, new Error('Offline') as any, actionConfig, cacheParams, httpParams) as Promise<any>
+        ;
     }
 
+
     if (!actionConfig.httpOnly) {
-      resource.$storagePromise = this.cache.removeFromArrays([cacheParams])
+      resource.$storagePromise = this.cache.removeFromArrays([resource.$query || cacheParams])
         .then(() => resource);
     }
 
@@ -256,6 +266,10 @@ export class ResourceClass {
 
     // indicate resource has server origin
     _.assign(resource, { $fromCache: false });
+
+    if (this.config.autoCompact) {
+      await this.compact();
+    }
 
     return resource;
   }

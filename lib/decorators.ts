@@ -16,6 +16,7 @@ function resource(config: ResourceMetadata): ClassDecorator {
   return (target: Function) => {
     const resourceTarget: ResourceTarget = target.prototype;
     const resource = resourceTarget.$resource = resourceTarget.$resource || new ResourceClass();
+    resourceTarget.$compact = () => resource.compact();
 
     // Init resource on next tick.
     Promise.resolve().then(() => resource.init(_.defaults<ResourceMetadata>(config, Resource.defaults, { name: target['name'] })));
@@ -37,5 +38,6 @@ Resource.defaults = {
   http: axios,
   driver: localforage.LOCALSTORAGE,
   networkState: new BrowserNetworkStateAdapter(),
-  reattemptInterval: 60000
+  reattemptInterval: 60000,
+  autoCompact: true
 };
