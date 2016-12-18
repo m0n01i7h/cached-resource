@@ -11,6 +11,7 @@ import { ResourceBase } from './abstract';
 import { SyncLock } from './lock';
 import { Resource, ResourceList } from './resource';
 
+/** @internal */
 export class Cache {
   constructor(
     private sync: SyncLock,

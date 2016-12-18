@@ -4,13 +4,8 @@ import * as _ from 'lodash';
 
 import { ResourceClass } from './resourceClass';
 import { BrowserNetworkStateAdapter } from './networkState/browserAdapter';
-import { ResourceTarget } from './abstract';
+import { ResourceTarget, ResourceStatic } from './abstract';
 import { ActionMetadata, ResourceMetadata } from './metadata';
-
-interface ResourceStatic {
-  (config: ResourceMetadata): ClassDecorator;
-  defaults?: ResourceMetadata;
-}
 
 function resource(config: ResourceMetadata): ClassDecorator {
   return (target: Function) => {
@@ -19,10 +14,13 @@ function resource(config: ResourceMetadata): ClassDecorator {
     resourceTarget.$compact = () => resource.compact();
 
     // Init resource on next tick.
-    Promise.resolve().then(() => resource.init(_.defaults<ResourceMetadata>(config, Resource.defaults, { name: target['name'] })));
+    Promise.resolve().then(() => resource.init(_.defaults<ResourceMetadata>(config, Resource.common, { name: target['name'] })));
   };
 }
 
+/**
+ * Property decorator. Defines a resource action.
+ */
 export function Action(config: ActionMetadata): PropertyDecorator {
   return (target: any, key: string) => {
     const resourceTarget: ResourceTarget = target;
@@ -32,8 +30,12 @@ export function Action(config: ActionMetadata): PropertyDecorator {
   };
 }
 
+/**
+ * Class decorator. Defines new http resource from the decorated class.
+ * @param {ResourceMetadata} config Resource configurations.
+ */
 export const Resource: ResourceStatic = resource;
-Resource.defaults = {
+Resource.common = {
   url: '',
   http: axios,
   driver: localforage.LOCALSTORAGE,

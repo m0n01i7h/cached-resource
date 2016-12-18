@@ -27,6 +27,7 @@ import { SyncLock } from './lock';
 import { Cache } from './cache';
 import { ActionsScheduler } from './scheduler';
 
+/** @internal */
 export class ResourceClass {
 
   private actions: { [key: string]: ActionMetadata } = {};
@@ -36,25 +37,42 @@ export class ResourceClass {
   private scheduler: ActionsScheduler;
   private sync = new SyncLock();
 
-  public async init(config: ResourceMetadata) {
+  /**
+   * Initialize resource
+   */
+  public init(config: ResourceMetadata) {
     this.config = config;
+
     this.storage = localforage.createInstance({
-      name: config.name,
+      name: this.config.name,
       storeName: 'keyvaluepairs',
-      version: '1.0',
-      driver: config.driver
+      version: 1,
+      driver: this.config.driver
     });
 
     this.cache = new Cache(this.sync, this.config, this.storage);
     this.scheduler = new ActionsScheduler(this.storage, this.config, this, this.cache);
   }
 
+  /**
+   * Add resource action.
+   * @param {string} name Name of the action.
+   * @param {ActionMetadata} config Config of the action.
+   */
   public addAction(name: string, config: ActionMetadata): Function {
     this.actions[name] = config;
     return (params, body, config) => this.invoke(name, params, body, config);
   }
 
-  public invoke(action: string, params: {} = {}, body: {} = {}, config?: ActionMetadata): ResourceBase {
+  /**
+   * Invoke resource action.
+   * @param {string} action Name of the action.
+   * @param {Object} params Request params.
+   * @param {Object|Resource} body Request payload.
+   * @param {ActionMetadata} [config] Overrides of action config.
+   * @return {Resource} Created resource.
+   */
+  public invoke(action: string, params: {} = {}, body: Object|Resource = {}, config?: ActionMetadata): ResourceBase {
     const actionConfig = _.assign({}, this.actions[action], config || {}) as ActionMetadata;
     const url = getUrl(
       actionConfig.url || this.config.url,
@@ -94,10 +112,15 @@ export class ResourceClass {
     return resource;
   }
 
+  /**
+   * Perform compaction of the cache. Removes all the abandoned documents.
+   * @return {Promise<void>}
+   */
   public async compact() {
     return this.cache.compact();
   }
 
+  /** @internal */
   private invokeGetAction(url: string, params: {} = {}, actionConfig: ActionMetadata, resource: Resource | ResourceList) {
 
     if (!actionConfig.localOnly) {
@@ -120,6 +143,7 @@ export class ResourceClass {
     return resource;
   }
 
+  /** @internal */
   private invokePostAction(action: string, url: string, params: {} = {}, actionConfig: ActionMetadata, resource: ResourceInstance) {
     const cacheParams = getRandomParams(_.assign({}, this.config.params, params), resource);
     const httpParams = getParams(_.assign({}, this.config.params, params), resource);
@@ -160,6 +184,7 @@ export class ResourceClass {
     return resource;
   }
 
+  /** @internal */
   private invokePutAction(action: string, url: string, params: {} = {}, actionConfig: ActionMetadata, resource: ResourceBase) {
     const cacheParams = getRandomParams(_.assign({}, this.config.params, params), resource);
     const httpParams = getParams(_.assign({}, this.config.params, params), resource);
@@ -182,6 +207,7 @@ export class ResourceClass {
     return resource;
   }
 
+  /** @internal */
   private invokeDeleteAction(action: string, url: string, params: {} = {}, actionConfig: ActionMetadata, resource: ResourceInstance = {}) {
     const cacheParams = getParams(this.config.params, resource);
     const httpParams = getParams(_.assign({}, this.config.params, params), resource);
@@ -208,7 +234,6 @@ export class ResourceClass {
         ;
     }
 
-
     if (!actionConfig.httpOnly) {
       resource.$storagePromise = this.cache.removeFromArrays([resource.$query || cacheParams])
         .then(() => resource);
@@ -218,6 +243,7 @@ export class ResourceClass {
   }
 
   /**
+   * @internal
    * Handle response
    */
   private handleResponse(httpParams: {}, config: ActionMetadata, data: {} | Array<{}>, resource: Resource | ResourceList) {
@@ -235,6 +261,7 @@ export class ResourceClass {
     return this.handleInstanceResponse(httpParams, config, data, resource as Resource);
   }
 
+  /** @internal */
   private async handleArrayResponse(httpParams: {}, config: ActionMetadata, data: Array<{}>, resource: ResourceList) {
 
     for (let entry of data) {
@@ -274,6 +301,7 @@ export class ResourceClass {
     return resource;
   }
 
+  /** @internal */
   private async handleInstanceResponse(httpParams: {}, config: ActionMetadata, data: {}, resource: Resource) {
     _.assign(resource, data, { $fromCache: false });
     const cacheParams = getParams(this.config.params, resource);
@@ -281,6 +309,7 @@ export class ResourceClass {
     return config.httpOnly ? resource : this.cache.saveOne(httpParams, cacheParams, resource);
   }
 
+  /** @internal */
   private async enqueueAction(action: string, err: Axios.AxiosXHR<any>, actionConfig: ActionMetadata, cacheParams: {}, httpParams: {}) {
 
     // skip adding pending action for httpOnly actions

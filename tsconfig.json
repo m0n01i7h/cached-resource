@@ -4,17 +4,14 @@
     "module": "commonjs",
     "sourceMap": true,
     "declaration": true,
-    "noResolve": true,
     "stripInternal": true,
-    "declarationDir": "types",
+    "declarationDir": "dist/typings",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "baseUrl": ".",
     "outDir": "dist"
   },
   "exclude": [
     "node_modules",
-    "dist",
-    "types"
+    "dist"
   ]
 }

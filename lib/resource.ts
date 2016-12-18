@@ -5,6 +5,7 @@ import {
   ResourceArray
 } from './abstract';
 
+/** @internal */
 export class Resource implements ResourceInstance {
 
   public $storagePromise: Promise<this>;
@@ -39,11 +40,16 @@ export class Resource implements ResourceInstance {
   }
 }
 
+/** @internal */
 export class ResourceList extends Array<ResourceInstance> implements ResourceArray {
   public $storagePromise: Promise<this>;
   public $httpPromise: Promise<this>;
 
   constructor() {
     super();
+  }
+
+  toJSON() {
+    return [].concat(this);
   }
 }

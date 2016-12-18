@@ -6,6 +6,7 @@ import { PendingAction } from './abstract';
 import { ResourceClass } from './resourceClass';
 import { ActionMetadata, ResourceMetadata } from './metadata';
 
+/** @internal */
 export class ActionsScheduler {
 
   private intervalId: any;

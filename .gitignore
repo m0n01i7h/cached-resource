@@ -2,8 +2,7 @@
 node_modules/
 typings/
 
-# Build dirs
-types/
+# Output dirs
 dist/
 
 # Misc, IDE

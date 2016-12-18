@@ -2,7 +2,7 @@
   "name": "cached-resource",
   "version": "0.0.1",
   "description": "Http REST client which provides application ability to work without an internet connecion.",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -26,6 +26,11 @@
   },
   "homepage": "https://github.com/m0n01i7h/cached-resource#readme",
   "dependencies": {
+    "@types/axios": "^0.9.34",
+    "@types/es6-shim": "^0.31.32",
+    "@types/localforage": "0.0.33",
+    "@types/lodash": "^4.14.43",
+    "@types/qs": "^6.2.30",
     "axios": "^0.15.3",
     "localforage": "^1.4.3",
     "lodash": "^4.17.2",
