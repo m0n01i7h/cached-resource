@@ -78,23 +78,21 @@ export class CommentsResource {
 }
 ```
 
-# Decorators
+## Decorators
 
-## `@Resource({...})`
+### `@Resource({...})`
 Class decorator. Defines new http resource from the decorated class based on the given resource metadata.
 
 
-## `@Action({...})`
+### `@Action({...})`
 This property decorator defines resource action based on a given ActionMetadata
 
-#### Action metadata params
+## Metadata
 
-# Metadata
-
-## `ResourceMetadata`
+### `ResourceMetadata`
 This metadata contains configuration information for the resource.
 
-### `url: String`
+#### `ResourceMetadata#url: String`
 Url patters for the http. Action params will be passed to the url according to this pattern.
 Segments prefixed with `:`(colon) will be replaced with action params, other will be passed to the query string params.
 
@@ -107,7 +105,7 @@ Param `bookId` in this example is optional.
 See [url-pattern](https://www.npmjs.com/package/url-pattern) for extra information.
 
 ---
-### `params: Object`
+#### `ResourceMetadata#params: Object`
 Bounding params pattern.
 This params used to map resource instance to url params and also as a key in the local data storage.
 Params prefixed with `@`(at) will be picked from resource instance according to names.
@@ -133,7 +131,7 @@ Params prefixed with `@`(at) will be picked from resource instance according to 
 ```
 ---
 
-### `http: AxiosInstance`
+#### `ResourceMetadata#http: AxiosInstance`
 
 Axios instance used as http framework.
 Can be easily replaced with custom instance of the axios. For example to mock http in testing purposes.
@@ -149,20 +147,20 @@ class BooksResource {...}
 
 ---
 
-### `name: String`
+#### `ResourceMetadata#name: String`
 
 Name of the LocalForage database. If name is not specified class name will be used.
 
 ---
 
-### `driver: String | LocalForageDriver | LocalForageDriver[]`
+#### `driver: String | LocalForageDriver | LocalForageDriver[]`
 LocalForage driver.
 
 Default is `localforage.LOCALSTORAGE`
 
 ---
 
-### `autoCompact: Boolean`
+#### `ResourceMetadata#autoCompact: Boolean`
 
 Whether to perform auto compaction after each array response is handled.
 Process is similar to garbage collection.
@@ -176,7 +174,7 @@ Default is `true`.
 
 ---
 
-### `networkState: NetworkStateAdapter`
+#### `ResourceMetadata#networkState: NetworkStateAdapter`
 
 Network state adapter.
 Used to determine network availability state of the application.
@@ -186,7 +184,7 @@ Default is `BrowserNetworkStateAdapter`. Uses `navigator.online` propery and 'on
 
 ---
 
-### `reattemptInterval: number`
+#### `ResourceMetadata#reattemptInterval: number`
 
 How often to try to perform actions over http if server is unavailable (receives 5** codes)
 
@@ -194,10 +192,10 @@ Default `60000` - every minute
 
 ---
 
-## `ActionMetadata`
+### `ActionMetadata`
 This metadata contains configuration information for the resource action.
 
-### `method: 'get' | 'post' | 'put' | 'delete'`
+#### `ActionMetadata#method: 'get' | 'post' | 'put' | 'delete'`
 
 Action method.
 
@@ -206,40 +204,40 @@ Action method.
 
 ---
 
-### `isArray: Boolean`
+#### `ActionMetadata#isArray: Boolean`
 Threat response as array.
 
 ---
 
-### `url: String`
+#### `ActionMetadata#url: String`
 
 Override resource url.
 
 ---
 
-### `params: Object`
+#### `ActionMetadata#params: Object`
 
 Overrides resource bounding params.
 
 ---
 
-### `localOnly: Boolean`
+#### `ActionMetadata#localOnly: Boolean`
 Do not perform any actions over http.
 
 Default is `false`
 
 ---
 
-### `httpOnly: Boolean`
+#### `ActionMetadata#httpOnly: Boolean`
 
 Do not perform any actions over the local data storage.
 
 Default is `false`
 
-# Interfaces
+## Interfaces
 
-## `ResourceArray`
+### `ResourceArray`
 Represents an array of the resources and indicators to determine whether elements were resolved either by http or from cache.
 
-## `ResourceInstance`
+### `ResourceInstance`
 Represents a resource instance and indicators to determine whether it was resolved either by http or from cache.
