@@ -1,9 +1,9 @@
 # Dependencies
 node_modules/
-typings/
 
 # Output dirs
 dist/
+typings/
 
 # Misc, IDE
 .vscode/

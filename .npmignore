@@ -1,0 +1,10 @@
+# Sources
+*.ts
+lib/
+
+# Misc
+.gitignore
+gulpfile.js
+tslint.json
+jsconfig.json
+tsconfig.json
