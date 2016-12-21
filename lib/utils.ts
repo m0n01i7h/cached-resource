@@ -30,13 +30,15 @@ export function randomString(length: number = 12) {
 }
 
 /**
-   * Generates instance key from params
-   */
+ * @internal
+ * Generates instance key from params
+ */
 export function getInstanceKey(config: ResourceMetadata, source: {}) {
   return `instance?${qs.stringify(getParams(_.assign({}, config.params || {}), source))}`;
 }
 
 /**
+ * @internal
  * Generates instance key from params
  */
 export function getActionKey(source: {}) {
@@ -44,6 +46,7 @@ export function getActionKey(source: {}) {
 }
 
 /**
+ * @internal
  * Generates collection key from params
  */
 export function getArrayKey(source: {}) {
@@ -51,6 +54,7 @@ export function getArrayKey(source: {}) {
 }
 
 /**
+ * @internal
  * Pick params from source according to bound params map
  */
 export function getParams(params: {} = {}, source: {} = {}) {
@@ -61,6 +65,7 @@ export function getParams(params: {} = {}, source: {} = {}) {
 }
 
 /**
+ * @internal
  * Generates url from url template, action params and action data
  */
 export function getUrl(url: string, params: {}, source: {} = {}) {
@@ -74,6 +79,7 @@ export function getUrl(url: string, params: {}, source: {} = {}) {
 }
 
 /**
+ * @internal
  * Generates params object with filled missed fields with random string.
  */
 export function getRandomParams(params: {} = {}, source: {} = {}) {

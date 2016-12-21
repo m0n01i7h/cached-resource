@@ -9,7 +9,7 @@ import {
 import { ResourceMetadata } from './metadata';
 import { ResourceBase } from './abstract';
 import { SyncLock } from './lock';
-import { Resource, ResourceList } from './resource';
+import { Resource, ResourceList } from './resourceModels';
 
 /** @internal */
 export class Cache {

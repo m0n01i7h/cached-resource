@@ -2,7 +2,7 @@ import * as axios from 'axios';
 import * as localforage from 'localforage';
 import * as _ from 'lodash';
 
-import { ResourceClass } from './resourceClass';
+import { ResourceService } from './resourceService';
 import { BrowserNetworkStateAdapter } from './networkState/browserAdapter';
 import { ResourceTarget, ResourceStatic } from './abstract';
 import { ActionMetadata, ResourceMetadata } from './metadata';
@@ -10,7 +10,7 @@ import { ActionMetadata, ResourceMetadata } from './metadata';
 function resource(config: ResourceMetadata): ClassDecorator {
   return (target: Function) => {
     const resourceTarget: ResourceTarget = target.prototype;
-    const resource = resourceTarget.$resource = resourceTarget.$resource || new ResourceClass();
+    const resource = resourceTarget.$resource = resourceTarget.$resource || new ResourceService();
     resourceTarget.$compact = () => resource.compact();
 
     // Init resource on next tick.
@@ -24,7 +24,7 @@ function resource(config: ResourceMetadata): ClassDecorator {
 export function Action(config: ActionMetadata): PropertyDecorator {
   return (target: any, key: string) => {
     const resourceTarget: ResourceTarget = target;
-    const resource = resourceTarget.$resource = resourceTarget.$resource || new ResourceClass();
+    const resource = resourceTarget.$resource = resourceTarget.$resource || new ResourceService();
 
     resourceTarget[key] = resource.addAction(key, config);
   };

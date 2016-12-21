@@ -1,5 +1,5 @@
 Provide to the application full offline experience by caching results of the http requests.
-Put actions like POST or DELETE in case of inability to perform them
+Puts actions like POST or DELETE in case if it is unable to perform them
 due to server unavailability or offline state of the application to queue for future invocation.
 
 Creation of this package was inspired by AngularJS [$resource]() and [$cachedResource]() modules.
@@ -27,36 +27,23 @@ export interface Comments extends Array<Comment>, ResourceArray { }
   params: { articleId: '@articleId', id: '@id' } // Parameters pattern for passing fields from the resource to the url.
 })
 export class CommentsResource {
-  @Action({
-    method: 'get',
-    isArray: true // Threat response as an array. Pick from cache array by given params.
-  })
+  // Threat response as an array. Pick from cache array by given params.
+  @Action({ method: 'get', isArray: true })
   public readonly findAllByArticle: (params: { articleId: number }) => Comments;
 
-  @Action({
-    method: 'get'
-  })
+  @Action({ method: 'get' })
   public readonly findOne: (params: { articleId: number, id: number }) => Comment;
 
-  @Action({
-    method: 'get',
-    localOnly: true
-  })
+  @Action({ method: 'get', localOnly: true })
   public readonly findOneCached: (params: { articleId: number, id: number }) => Comments;
 
-  @Action({
-    method: 'post'
-  })
+  @Action({ method: 'post' })
   public readonly create: (params: { articleId: number }, comment: Comment) => Comment;
 
-  @Action({
-    method: 'put'
-  })
+  @Action({ method: 'put' })
   public readonly update: (params: { }, comment: Comment) => Comment;
 
-  @Action({
-    method: 'delete'
-  })
+  @Action({ method: 'delete' })
   public readonly remove: (params: { }, comment: Comment) => Comment;
 }
 

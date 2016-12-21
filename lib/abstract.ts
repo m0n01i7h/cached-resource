@@ -1,9 +1,9 @@
-import { ResourceClass } from './resourceClass';
+import { ResourceService } from './resourceService';
 import { ResourceMetadata } from './metadata';
 
 /** @internal */
 export interface ResourceTarget {
-  $resource: ResourceClass;
+  $resource: ResourceService;
   $compact: () => Promise<void>;
 }
 

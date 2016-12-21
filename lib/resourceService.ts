@@ -21,14 +21,14 @@ import {
   PendingAction
 } from './abstract';
 
-import { Resource, ResourceList } from './resource';
+import { Resource, ResourceList } from './resourceModels';
 
 import { SyncLock } from './lock';
 import { Cache } from './cache';
 import { ActionsScheduler } from './scheduler';
 
 /** @internal */
-export class ResourceClass {
+export class ResourceService {
 
   private actions: { [key: string]: ActionMetadata } = {};
   private config: ResourceMetadata;
@@ -223,9 +223,13 @@ export class ResourceClass {
         // Perform request if online
         ? this.config.http.delete(url)
           .then(async (res) => {
-            await this.cache.removeFromArrays([resource.$query || cacheParams]);
-            await this.cache.remove(cacheParams);
             _.assign(resource, { $removed: true });
+
+            if (!actionConfig.httpOnly) {
+              await this.cache.removeFromArrays([resource.$query || cacheParams]);
+              await this.cache.remove(cacheParams);
+            }
+
             return resource;
           })
           .catch(err => this.enqueueAction(action, err, actionConfig, cacheParams, httpParams) as Promise<any>)
@@ -246,19 +250,21 @@ export class ResourceClass {
    * @internal
    * Handle response
    */
-  private handleResponse(httpParams: {}, config: ActionMetadata, data: {} | Array<{}>, resource: Resource | ResourceList) {
+  private async handleResponse(httpParams: {}, config: ActionMetadata, data: {} | Array<{}>, resource: Resource | ResourceList) {
 
     if (config.isArray && !_.isArray(data)) {
       throw new Error(`Resource expected an array but got ${typeof data}`);
     }
 
     if (config.isArray) {
-      return this.handleArrayResponse(httpParams, config, data as Array<{}>, resource as ResourceList);
+      this.handleArrayResponse(httpParams, config, data as Array<{}>, resource as ResourceList);
+    } else {
+      this.handleInstanceResponse(httpParams, config, data, resource as Resource);
     }
 
     delete resource.$httpPromise;
 
-    return this.handleInstanceResponse(httpParams, config, data, resource as Resource);
+    return resource;
   }
 
   /** @internal */
@@ -277,7 +283,7 @@ export class ResourceClass {
     }
 
     if (!config.httpOnly) {
-      this.cache.saveAll(httpParams, resource);
+      await this.cache.saveAll(httpParams, resource);
     }
 
     const temp = [].concat(resource);
@@ -294,7 +300,7 @@ export class ResourceClass {
     // indicate resource has server origin
     _.assign(resource, { $fromCache: false });
 
-    if (this.config.autoCompact) {
+    if (!config.httpOnly && this.config.autoCompact) {
       await this.compact();
     }
 
@@ -306,7 +312,11 @@ export class ResourceClass {
     _.assign(resource, data, { $fromCache: false });
     const cacheParams = getParams(this.config.params, resource);
 
-    return config.httpOnly ? resource : this.cache.saveOne(httpParams, cacheParams, resource);
+    if (config.httpOnly) {
+      return resource;
+    }
+
+    this.cache.saveOne(httpParams, cacheParams, resource);
   }
 
   /** @internal */

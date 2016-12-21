@@ -1,7 +1,7 @@
 {
-  "name": "cached-resource",
+  "name": "javelin",
   "version": "0.0.1",
-  "description": "Http REST client which provides application ability to work without an internet connecion.",
+  "description": "Http REST client with full offline experience",
   "main": "dist/index.js",
   "typings": "typings/index.d.ts",
   "scripts": {

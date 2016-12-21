@@ -3,7 +3,7 @@ import * as _ from 'lodash';
 import { getInstanceKey, getActionKey } from './utils';
 import { Cache } from './cache';
 import { PendingAction } from './abstract';
-import { ResourceClass } from './resourceClass';
+import { ResourceService } from './resourceService';
 import { ActionMetadata, ResourceMetadata } from './metadata';
 
 /** @internal */
@@ -14,7 +14,7 @@ export class ActionsScheduler {
   constructor(
     private storage: LocalForage,
     private config: ResourceMetadata,
-    private resource: ResourceClass,
+    private resource: ResourceService,
     private cache: Cache
   ) {
     if (this.config.networkState.isOnline) {
