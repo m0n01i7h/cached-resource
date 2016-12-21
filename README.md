@@ -4,9 +4,12 @@ due to server unavailability or offline state of the application to queue for fu
 
 Creation of this package was inspired by AngularJS [$resource]() and [$cachedResource]() modules.
 
-## Few Example
+## Few Examples
+
+Define resource using decorators.
+
 ```typescript
-import { Action, Resource, ResourceArray, ResourceInstance } from 'cached-resource';
+import { Action, Resource, ResourceArray, ResourceInstance } from 'javelin';
 
 /**
  * Single instance of the resource
@@ -54,7 +57,7 @@ Since this package does not depend onto any certain framework there are no diffi
 
 ```typescript
 import { Injectable, Component, ... } from '@angular/core';
-import { Resource, ... } from 'cached-resource';
+import { Resource, ... } from 'javelin';
 
 @Injectable()
 @Resource({
@@ -67,7 +70,7 @@ class CommentsResource {
 @Component(...)
 class CommentsComponent {
 
-  public  comments: Comments;
+  public comments: Comments;
 
   constructor(
     private commentsResource: CommentsResource
@@ -80,11 +83,27 @@ class CommentsComponent {
 ## Decorators
 
 ### @Resource(metadata: ResourceMetadata)
-Class decorator. Defines new http resource from the decorated class based on the given [ResourceMetadata](#resourcemetadata).
+Class decorator. Declares new resource over the decorated class based on the given [ResourceMetadata](#resourcemetadata).
+
+```typescript
+@Resource({
+  name: 'Comments.db', // The name of the localForage collection
+  url: '/api/articles/:articleId/comments(/:id)', // The url pattern '/:id' is an optional segment
+  params: { articleId: '@articleId', id: '@id' } // Parameters pattern for passing fields from the resource to the url.
+})
+class CommentsResource { ... }
+```
 
 
 ### @Action(metadata: ActionMetadata)
-This property decorator defines resource action based on a given [ActionMetadata](#actionmetadata).
+Property decorator. Declares resource action over the decorated method based on a given [ActionMetadata](#actionmetadata).
+
+```typescript
+class CommentsResource {
+  @Action({ method: 'get' })
+  public readonly findOne: (params: { articleId: number, id: number }) => Comment;
+}
+```
 
 ## Metadata
 
@@ -310,3 +329,28 @@ Resource instances and resource arrays use some fields for internal purposes.
 * `$query` - Reference to itself in local data storage. Used to keep tracking of new object.
 * `$storagePromise` - Resolution of performing operations over the http.
 * `$httpPromise` - Resolution of performing operations over the http.
+
+
+## License
+
+The MIT License (MIT)
+
+Copyright (c) <year> <copyright holders>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
