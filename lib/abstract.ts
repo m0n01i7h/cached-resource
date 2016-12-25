@@ -5,6 +5,7 @@ import { ResourceMetadata } from './metadata';
 export interface ResourceTarget {
   $resource: ResourceService;
   $compact: () => Promise<void>;
+  $clear: () => Promise<void>;
 }
 
 /**

@@ -187,7 +187,6 @@ export class Cache {
    * Remove all instances which are not constitute in any array
    */
   public async compact() {
-    console.log('compact');
     let keys = await this.storage.keys();
     const arrayKeys = keys.filter(key => /^array/.test(key));
     const arrays = await Promise.all(arrayKeys.map(key => this.storage.getItem<Array<{}>>(key)));
@@ -203,5 +202,12 @@ export class Cache {
       .filter(key => !_(queries).some(query => query === key));
 
     await Promise.all(abandonedInstanceKeys.map(key => this.storage.removeItem(key)));
+  }
+
+  public async clear() {
+    let keys = await this.storage.keys();
+    keys.filter(key => /^array|^instance/.test(key));
+
+    await Promise.all(keys.map(key => this.storage.removeItem(key)));
   }
 }

@@ -40,7 +40,7 @@ export class ResourceService {
   /**
    * Initialize resource
    */
-  public init(config: ResourceMetadata) {
+  public async init(config: ResourceMetadata) {
     this.config = config;
 
     this.storage = localforage.createInstance({
@@ -49,6 +49,8 @@ export class ResourceService {
       version: 1,
       driver: this.config.driver
     });
+
+    await this.storage.ready();
 
     this.cache = new Cache(this.sync, this.config, this.storage);
     this.scheduler = new ActionsScheduler(this.storage, this.config, this, this.cache);
@@ -113,11 +115,20 @@ export class ResourceService {
   }
 
   /**
-   * Perform compaction of the cache. Removes all the abandoned documents.
+   * Compact cache. Removes all the abandoned instances.
+   * Process is similar to garbage collection. Do not recommended to use autocompaction on large resources.
    * @return {Promise<void>}
    */
   public async compact() {
     return this.cache.compact();
+  }
+
+  /**
+   * Clear cache and remove all pending actions.
+   * @return {Promise<void>}
+   */
+  public async clear() {
+    await Promise.all([this.cache.clear(), this.scheduler.clear()]);
   }
 
   /** @internal */

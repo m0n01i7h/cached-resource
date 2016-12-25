@@ -179,6 +179,10 @@ This metadata contains configuration information for the resource.
   Use Resource defined `$compact` function on the instance of the decorated class to perform compaction manually e.g. on application start.
 
   ```typescript
+  class ArticlesResource {
+    public readonly $compact() => Promise<void>;
+  }
+
   await new ArticlesResource().$compact()
   ```
   Default is `true`.
@@ -317,6 +321,18 @@ but fields which was already in the resource will not be removed from it.
 Resource has *"local only"* fields. All the fields prefixed with `$`(dollar) or `__`(double underscore) will not be sent over http at all.
 Such fields will be saved on the client side until they removed manually.
 Thees fields useful to store some kind of meta information such as references to another resource or timestamps of performed actions.
+
+## Clearing the cache
+Use Resource defined `$clear` function on the instance of the decorated class to perform clearing the resource data.
+
+```typescript
+
+class ArticlesResource {
+  public readonly $clear() => Promise<void>;
+}
+
+await new ArticlesResource().$clear()
+```
 
 ## Reserved fields
 Resource instances and resource arrays use some fields for internal purposes.

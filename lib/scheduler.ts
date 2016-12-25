@@ -72,6 +72,13 @@ export class ActionsScheduler {
     await this.storage.removeItem(getActionKey(cacheParams));
   }
 
+  public async clear() {
+    let keys = await this.storage.keys();
+    keys.filter(key => /^action/.test(key));
+
+    await Promise.all(keys.map(key => this.storage.removeItem(key)));
+  }
+
   private enableAttempts() {
     this.intervalId = setInterval(() => this.checkPendingActions(), this.config.reattemptInterval);
   }
