@@ -1,7 +1,7 @@
 {
-  "name": "javelin",
-  "version": "0.0.1",
-  "description": "Http REST client with full offline experience",
+  "name": "animus",
+  "version": "0.1.0",
+  "description": "Http framework with full offline capabilities",
   "main": "dist/index.js",
   "typings": "typings/index.d.ts",
   "scripts": {
@@ -9,11 +9,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/m0n01i7h/cached-resource.git"
+    "url": "git+https://github.com/zhakhalov/animus.git"
   },
   "keywords": [
     "typescript",
     "angular2",
+    "offline",
+    "ionic2",
+    "cordova",
     "react",
     "http",
     "rest",
@@ -23,9 +26,9 @@
   "author": "Viktor Zhakhalov <zhakhalov@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/m0n01i7h/cached-resource/issues"
+    "url": "https://github.com/zhakhalov/animus/issues"
   },
-  "homepage": "https://github.com/m0n01i7h/cached-resource#readme",
+  "homepage": "https://github.com/zhakhalov/animus#readme",
   "dependencies": {
     "@types/axios": "^0.9.34",
     "@types/es6-shim": "^0.31.32",
