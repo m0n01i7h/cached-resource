@@ -1,10 +1,13 @@
 # Sources
 *.ts
+!*.d.ts
 lib/
 
 # Misc
 .gitignore
+.vscode/
 gulpfile.js
 tslint.json
 jsconfig.json
 tsconfig.json
+webpack.config.js
