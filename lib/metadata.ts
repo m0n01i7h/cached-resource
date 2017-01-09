@@ -57,6 +57,10 @@ export interface ResourceMetadata {
    */
   name?: string;
   /**
+   * Defer initialization of the resource.
+   */
+  bootstrap?: Promise<any>;
+  /**
    * LocalForage driver.
    * @default localforage.LOCALSTORAGE
    */
@@ -98,6 +102,10 @@ export interface ActionMetadata {
    * Threat response as array.
    */
   isArray?: boolean;
+  /**
+   * Request config
+   */
+  config?: Axios.AxiosXHRConfig<any>;
   /**
    * Override resource url.
    */

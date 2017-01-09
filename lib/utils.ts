@@ -31,7 +31,7 @@ export function randomString(length: number = 12) {
 
 /**
  * @internal
- * Generates instance key from params
+ * Generates instance key from params.
  */
 export function getInstanceKey(config: ResourceMetadata, source: {}) {
   return `instance?${qs.stringify(getParams(_.assign({}, config.params || {}), source))}`;
@@ -39,7 +39,7 @@ export function getInstanceKey(config: ResourceMetadata, source: {}) {
 
 /**
  * @internal
- * Generates instance key from params
+ * Generates instance key from params.
  */
 export function getActionKey(source: {}) {
   return `action?${qs.stringify(source)}`;
@@ -47,7 +47,7 @@ export function getActionKey(source: {}) {
 
 /**
  * @internal
- * Generates collection key from params
+ * Generates collection key from params.
  */
 export function getArrayKey(source: {}) {
   return `array?${qs.stringify(source)}`;
@@ -55,7 +55,7 @@ export function getArrayKey(source: {}) {
 
 /**
  * @internal
- * Pick params from source according to bound params map
+ * Pick params from source according to bound params map.
  */
 export function getParams(params: {} = {}, source: {} = {}) {
   return _.mapValues(params, param => _.isString(param) && _.startsWith(param, '@')
@@ -66,7 +66,7 @@ export function getParams(params: {} = {}, source: {} = {}) {
 
 /**
  * @internal
- * Generates url from url template, action params and action data
+ * Creates url from url template, action params and action data.
  */
 export function getUrl(url: string, params: {}, source: {} = {}) {
   params = getParams(params, source);
@@ -80,7 +80,7 @@ export function getUrl(url: string, params: {}, source: {} = {}) {
 
 /**
  * @internal
- * Generates params object with filled missed fields with random string.
+ * Creates params object with filled missed fields with random string.
  */
 export function getRandomParams(params: {} = {}, source: {} = {}) {
   return _.defaults(
@@ -92,4 +92,19 @@ export function getRandomParams(params: {} = {}, source: {} = {}) {
       ? randomString(24)
       : param)
   );
+}
+
+/**
+ * @internal
+ * Creates externally resolvable defer.
+ */
+export function defer() {
+  let resolve: Function;
+  let reject: Function;
+  const promise = new Promise<any>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+
+  return { resolve, reject, promise };
 }

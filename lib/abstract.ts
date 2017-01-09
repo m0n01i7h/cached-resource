@@ -74,7 +74,6 @@ export interface NetworkStateAdapter {
   setOfflineHandler(handler: () => void): void;
 }
 
-/** @internal */
 export interface ResourceStatic {
   (config: ResourceMetadata): ClassDecorator;
   common?: ResourceMetadata;

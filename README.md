@@ -9,7 +9,7 @@ Creation of this package was inspired by AngularJS [$resource]() and [$cachedRes
 Define resource using decorators.
 
 ```typescript
-import { Action, Resource, ResourceArray, ResourceInstance } from 'javelin';
+import { Action, Resource, ResourceArray, ResourceInstance } from 'animus';
 
 /**
  * Single instance of the resource
@@ -57,7 +57,7 @@ Since this package does not depend onto any certain framework there are no diffi
 
 ```typescript
 import { Injectable, Component, ... } from '@angular/core';
-import { Resource, ... } from 'javelin';
+import { Resource, ... } from 'animus';
 
 @Injectable()
 @Resource({
@@ -92,6 +92,14 @@ Class decorator. Declares new resource over the decorated class based on the giv
   params: { articleId: '@articleId', id: '@id' } // Parameters pattern for passing fields from the resource to the url.
 })
 class CommentsResource { ... }
+```
+
+#### Common configurations
+`Resource.common` - default resource configuration
+
+```typescript
+Resource.common.networkStateAdapter = new CustomNetworkStateAdapter();
+Resource.common.driver = CustomLocalForage._driver;
 ```
 
 
@@ -165,10 +173,18 @@ This metadata contains configuration information for the resource.
 * `ResourceMetadata#name: String`
   Name of the LocalForage database. If name is not specified class name will be used.
 
-* `driver: String | LocalForageDriver | LocalForageDriver[]`
+* `ResourceMetadata#driver: String | LocalForageDriver | LocalForageDriver[]`
   LocalForage driver.
 
   Default is `localforage.LOCALSTORAGE`
+
+* `ResourceMetadata#bootstrap: Promise`
+  Defer initialization of resource.
+  ```typescript
+
+  Resource.common.bootstrap = new Promise(resolve => $(document).ready(() => resolve()));
+
+  ```
 
 * `ResourceMetadata#autoCompact: Boolean`
 
@@ -227,6 +243,20 @@ This metadata contains configuration information for the resource action.
   Do not perform any actions over the local data storage.
 
   Default is `false`
+
+* `ActionMetadata#config`
+  Additional http action config
+
+  ```typescript
+  @Action({
+    method: 'get',
+    config: {
+      headers: {
+        'X-My-Custom-Header': 'MyCustomValue'
+      }
+    }
+  })
+  ```
 
 ## Interfaces
 
@@ -318,9 +348,9 @@ All the fields from response will be assigned to the resource instance due to se
 but fields which was already in the resource will not be removed from it.
 
 ## Local fields
-Resource has *"local only"* fields. All the fields prefixed with `$`(dollar) or `__`(double underscore) will not be sent over http at all.
+Resource has *"local only"* fields. All the fields prefixed with `$`(dollar) or `__`(double underscore) will not be sent over http.
 Such fields will be saved on the client side until they removed manually.
-Thees fields useful to store some kind of meta information such as references to another resource or timestamps of performed actions.
+Thees fields are useful to store some kind of meta information such as references to another resource or timestamps of performed actions.
 
 ## Clearing the cache
 Use Resource defined `$clear` function on the instance of the decorated class to perform clearing the resource data.
