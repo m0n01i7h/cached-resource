@@ -5,9 +5,10 @@ const TsConfigPathsPlugin = require('awesome-typescript-loader').TsConfigPathsPl
 const nodeExternals = require('webpack-node-externals');
 
 const PRODUCTION = process.env.NODE_ENV === 'production';
-const DEBUG = process.env.NODE_ENV !== 'production';
+const DEBUG = !PRODUCTION;
 
 module.exports = {
+  devtool: 'inline-source-map',
   entry: {
     index: path.join(__dirname, 'index'),
   },
@@ -29,7 +30,7 @@ module.exports = {
     ],
   },
   module: {
-    loaders: [
+    rules: [
       { test: /\.ts$/, loaders: ['awesome-typescript-loader'] },
     ]
   },

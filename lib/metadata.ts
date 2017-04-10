@@ -64,7 +64,7 @@ export interface ResourceMetadata {
    * LocalForage driver.
    * @default localforage.LOCALSTORAGE
    */
-  driver?: string | LocalForageDriver | LocalForageDriver[];
+  driver?: string | string[];
   /**
    * Whether to perform auto compaction after each array response.
    * Process similar to garbage collection.
