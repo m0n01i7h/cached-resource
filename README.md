@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/zhakhalov/animus.svg?branch=master)](https://travis-ci.org/zhakhalov/animus)
+
 Provide to the application full offline experience by caching results of the http requests.
 Puts actions like POST or DELETE in case if it is unable to perform them
 due to server unavailability or offline state of the application to queue for future invocation.
