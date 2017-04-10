@@ -30,11 +30,6 @@
   },
   "homepage": "https://github.com/zhakhalov/animus#readme",
   "dependencies": {
-    "@types/axios": "^0.9.34",
-    "@types/es6-shim": "^0.31.32",
-    "@types/localforage": "0.0.33",
-    "@types/lodash": "^4.14.43",
-    "@types/qs": "^6.2.30",
     "axios": "^0.15.3",
     "localforage": "^1.4.3",
     "lodash": "^4.17.2",
@@ -42,6 +37,11 @@
     "url-pattern": "^1.0.3"
   },
   "devDependencies": {
+    "@types/axios": "^0.9.34",
+    "@types/es6-shim": "^0.31.32",
+    "@types/localforage": "0.0.33",
+    "@types/lodash": "^4.14.43",
+    "@types/qs": "^6.2.30",
     "awesome-typescript-loader": "^3.0.0-beta.17",
     "clean-webpack-plugin": "^0.1.14",
     "gulp": "^3.9.1",
