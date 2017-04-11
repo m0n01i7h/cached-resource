@@ -5,28 +5,30 @@ var webpackConfig = require('./webpack.config.js');
 
 module.exports = function (config) {
   config.set({
-    basePath: __dirname,
-    frameworks: ['mocha', 'chai'],
+    basePath: '',
+    frameworks: ['mocha', 'chai', 'karma-typescript'],
     files: [
-      'test/**/*.ts'
+      'lib/**/*.ts',
+      'test/**/*.ts',
     ],
     exclude: [
     ],
     preprocessors: {
-      'test/**/*.ts': ['webpack']
+      '**/*.ts': ['karma-typescript']
     },
-    mime: {
-      'text/x-typescript': ['ts', 'tsx']
-    },
-    reporters: ['progress'],
+    // mime: {
+    //   'text/x-script': ['ts', 'tsx']
+    // },
+    reporters: ['progress', 'karma-typescript'],
     port: 9876,
     colors: true,
-    webpack: {
-      devtool: 'inline-source-map',
-      // debug: true,
-      resolve: webpackConfig.resolve,
-      module: webpackConfig.module,
-    },
+    webpack: webpackConfig,
+    // webpack: {
+    //   devtool: 'inline-source-map',
+    //   // debug: true,
+    //   resolve: webpackConfig.resolve,
+    //   module: webpackConfig.module,
+    // },
     webpackMiddleware: {
       // quiet: true,
       stats: {

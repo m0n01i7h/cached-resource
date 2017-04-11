@@ -4,6 +4,7 @@ node_modules/
 # Output dirs
 dist/
 typings/
+coverage/
 
 # Misc, IDE
 .vscode/
