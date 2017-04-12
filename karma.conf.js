@@ -21,5 +21,15 @@ module.exports = function (config) {
     browsers: ['PhantomJS'],
     singleRun: false,
     concurrency: Infinity,
+    karmaTypescriptConfig: {
+      reports: {
+        html: 'coverage',
+        lcovonly: {
+          directory: 'coverage',
+          subdirectory: 'lcov',
+          filename: 'lcov.info'
+        }
+      }
+    }
   })
 }
