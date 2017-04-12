@@ -6,8 +6,8 @@
 - Shows stored results before getting response from the server.
 - Stores results of the http requests on the browser side by using flexible [localForage](https://github.com/localForage/localForage) for future usage even after application was reloaded.
 - Provides TypeScript friendly interface based on decorators
-
-Sending date with POST, PUT or DELETE methods in case if service is unreachable to queue for future invocation event if application is reloaded.
+- Independent from any frameworks. Can be used with Angular, React, Vue etc.
+- Sending date with POST, PUT or DELETE methods in case if service is unreachable to queue for future invocation event if application is reloaded.
 
 Creation of this package was inspired by AngularJS [$resource](https://docs.angularjs.org/api/ngResource/service/$resource) and [$cachedResource](https://github.com/goodeggs/angular-cached-resource) libraries.
 
@@ -62,7 +62,7 @@ export class CommentsResource {
 const commentsResource = new CommentsResource();
 ```
 
-Since this package does not depend onto any certain framework there are no difficulties to use it as, for example, Angular 2.x provider
+Since this package does not depend onto any certain framework there are no difficulties to use it as, for example, Angular provider
 
 ```typescript
 import { Injectable, Component, ... } from '@angular/core';
