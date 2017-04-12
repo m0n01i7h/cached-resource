@@ -1,12 +1,19 @@
-[![Build Status](https://travis-ci.org/zhakhalov/animus.svg?branch=master)](https://travis-ci.org/zhakhalov/animus)
+# Animus
 
-Provide to the application full offline experience by caching results of the http requests.
-Puts actions like POST or DELETE in case if it is unable to perform them
-due to server unavailability or offline state of the application to queue for future invocation.
+### Features
 
-Creation of this package was inspired by AngularJS [$resource]() and [$cachedResource]() modules.
+- Brings to the application ability to build full offline experience.
+- Shows stored results before getting response from the server.
+- Stores results of the http requests on the browser side by using flexible [localForage](https://github.com/localForage/localForage) for future usage even after application was reloaded.
+- Provides TypeScript friendly interface based on decorators
 
-## Few Examples
+Sending date with POST, PUT or DELETE methods in case if service is unreachable to queue for future invocation event if application is reloaded.
+
+Creation of this package was inspired by AngularJS [$resource](https://docs.angularjs.org/api/ngResource/service/$resource) and [$cachedResource](https://github.com/goodeggs/angular-cached-resource) libraries.
+
+[![Build Status](https://travis-ci.org/zhakhalov/animus.svg?branch=master)](https://travis-ci.org/zhakhalov/animus) [![Coverage Status](https://coveralls.io/repos/github/zhakhalov/animus/badge.svg?branch=master)](https://coveralls.io/github/zhakhalov/animus?branch=master)
+
+## Few Samples
 
 Define resource using decorators.
 
