@@ -41,11 +41,3 @@ describe('Resource', () => {
     });
   });
 });
-
-describe('ResourceList', () => {
-  describe('#toJSON()', () => {
-    const resource = new ResourceList();
-    resource.toJSON()
-    // expect(resource.toJSON().length).not.to.be.undefined;
-  });
-});
