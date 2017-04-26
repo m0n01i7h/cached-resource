@@ -8,6 +8,7 @@
     "declarationDir": "dist/typings",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
     "outDir": "dist"
   },
   "exclude": [

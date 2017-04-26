@@ -179,6 +179,11 @@ This metadata contains configuration information for the resource.
   class CommentsResource {...}
   ```
 
+* `ResourceMetadata#httpOnly: Boolean`
+   Do not perform any actions over storage.
+   Note: if true `httpOnly` and `localOnly` field on action decorators will be ignored.
+   Default is false
+
 * `ResourceMetadata#name: String`
   Name of the LocalForage database. If name is not specified class name will be used.
 

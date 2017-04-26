@@ -77,6 +77,13 @@ export interface ResourceMetadata {
    * @default true
    */
   autoCompact?: boolean;
+
+  /**
+   * Do not perform any actions over storage.
+   * Note: if true 'httpOnly' field on action decorators will be ignored.
+   * @default false
+   */
+  httpOnly?: boolean;
   /**
    * Network state adapter.
    * Used to determine if network capabilities of the application and also notify resource about getting online/offline
@@ -120,7 +127,7 @@ export interface ActionMetadata {
    */
   localOnly?: boolean;
   /**
-   * Do not perform any actions over cache.
+   * Do not perform any actions over storage.
    * @default false
    */
   httpOnly?: boolean;
