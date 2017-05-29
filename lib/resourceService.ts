@@ -1,9 +1,9 @@
-import axios from 'axios';
-import {AxiosResponse} from 'axios';
-import UrlPattern from 'url-pattern';
-import _ from 'lodash';
-import localforage from 'localforage';
-import qs from 'qs';
+import * as axios from 'axios';
+import { AxiosResponse } from 'axios';
+import * as UrlPattern from 'url-pattern';
+import * as _ from 'lodash';
+import * as localforage from 'localforage';
+import * as qs from 'qs';
 
 import { ActionMetadata, ResourceMetadata } from './metadata';
 import {
@@ -85,7 +85,7 @@ export class ResourceService {
    * @param {ActionMetadata} [config] Overrides of action config.
    * @return {Resource} Created resource.
    */
-  public invoke(action: string, params: {} = {}, body: Object|Resource = {}, config?: ActionMetadata): ResourceBase {
+  public invoke(action: string, params: {} = {}, body: Object | Resource = {}, config?: ActionMetadata): ResourceBase {
     const actionConfig = _.assign({}, this.actions[action], config || {}) as ActionMetadata;
     const url = getUrl(
       actionConfig.url || this.config.url,

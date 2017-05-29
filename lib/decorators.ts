@@ -1,6 +1,6 @@
 import axios from 'axios';
-import localforage from 'localforage';
-import _ from 'lodash';
+import * as localforage from 'localforage';
+import * as _ from 'lodash';
 
 import { ResourceService } from './resourceService';
 import { BrowserNetworkStateAdapter } from './networkState/browserAdapter';
