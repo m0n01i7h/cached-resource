@@ -1,8 +1,9 @@
-import * as axios from 'axios';
-import * as UrlPattern from 'url-pattern';
-import * as _ from 'lodash';
-import * as localforage from 'localforage';
-import * as qs from 'qs';
+import axios from 'axios';
+import {AxiosResponse} from 'axios';
+import UrlPattern from 'url-pattern';
+import _ from 'lodash';
+import localforage from 'localforage';
+import qs from 'qs';
 
 import { ActionMetadata, ResourceMetadata } from './metadata';
 import {
@@ -97,7 +98,7 @@ export class ResourceService {
       : body instanceof Resource ? body : new Resource(body)
       ;
 
-    if (this.config.httpOnly || !actionConfig.localOnly) {
+    if (!this.config.httpOnly && actionConfig.localOnly) {
       resource.$httpPromise = Promise.reject<ResourceBase>(new Error('This action is localOnly'));
     }
 
@@ -313,7 +314,7 @@ export class ResourceService {
       }
     }
 
-    if (!this.config.httpOnly && config.httpOnly) {
+    if (!this.config.httpOnly && !config.httpOnly) {
       await this.cache.saveAll(httpParams, resource);
     }
 
@@ -351,7 +352,7 @@ export class ResourceService {
   }
 
   /** @internal */
-  private async enqueueAction(action: string, err: Axios.AxiosXHR<any>, actionConfig: ActionMetadata, cacheParams: {}, httpParams: {}) {
+  private async enqueueAction(action: string, err: AxiosResponse, actionConfig: ActionMetadata, cacheParams: {}, httpParams: {}) {
 
     // skip adding pending action for httpOnly actions
     if (this.config.httpOnly || actionConfig.httpOnly) {

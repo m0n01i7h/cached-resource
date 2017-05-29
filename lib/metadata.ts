@@ -1,3 +1,4 @@
+import { AxiosInstance, AxiosRequestConfig } from 'axios'
 import { NetworkStateAdapter } from './abstract';
 
 /**
@@ -51,7 +52,7 @@ export interface ResourceMetadata {
    * class BooksResource {...}
    * ```
    */
-  http?: Axios.AxiosInstance;
+  http?: AxiosInstance;
   /**
    * Name of the LocalForage database. If name is not specified class name will be used.
    */
@@ -112,7 +113,7 @@ export interface ActionMetadata {
   /**
    * Request config
    */
-  config?: Axios.AxiosXHRConfig<any>;
+  config?: AxiosRequestConfig;
   /**
    * Override resource url.
    */
