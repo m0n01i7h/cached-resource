@@ -1,12 +1,14 @@
 # Sources
 *.ts
 !*.d.ts
+dist/**/*.d.ts
 lib/
 
 # Misc
 .gitignore
 .vscode/
 gulpfile.js
+.travis.yml
 tslint.json
 jsconfig.json
 tsconfig.json

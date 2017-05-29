@@ -11,14 +11,14 @@ const runSequence = require('run-sequence');;
 gulp.task('env:prod', () => process.env.NODE_ENV = 'production');
 
 gulp.task('build:prod', done => runSequence('env:prod', 'clean:declarations', 'build:declarations', 'build:src', done));
-gulp.task('build', done => runSequence('clean:declarations', 'build:declarations', 'build:src', done));
+gulp.task('build', done => runSequence('clean:declarations', 'build:src', 'build:declarations', done));
 
 gulp.task('build:src', () => gulp.src('./index.ts')
   .pipe(gulpWebpack(Object.assign(require('./webpack.config')), webpack))
   .pipe(gulp.dest('./dist/'))
 );
 
-gulp.task('build:declarations', () => gulp.src(['./**/*.ts', '!node_modules/**/*.*', '!typings/**/*.*', '!dist/**/*.*'])
+gulp.task('build:declarations', () => gulp.src(['./**/*.ts', '!node_modules/**/*.*', '!typings/**/*.*', '!dist/**/*.*', '!test/**/*.*'])
   .pipe(typescript.createProject('tsconfig.json')())
   .dts
   .pipe(gulp.dest('./typings/'))
@@ -39,3 +39,6 @@ gulp.task('tslint', () =>
     .pipe(tslint.report())
 );
 
+gulp.task('remove:dist:declarations', () => gulp.src('./dist/typings', { read: false })
+  .pipe(clean())
+);

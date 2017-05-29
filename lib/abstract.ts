@@ -85,3 +85,5 @@ export interface PendingAction {
   cacheParams: {};
   httpParams: {};
 }
+
+export const stub = null;

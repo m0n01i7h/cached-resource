@@ -14,7 +14,7 @@ module.exports = {
   },
   output: {
     path: path.join(__dirname, 'dist'),
-    filename: '[name].js',
+    filename: PRODUCTION ? '[name].min.js' : '[name].js',
     chunkFilename: '[id].js',
     libraryTarget: 'commonjs2'
   },
@@ -42,10 +42,7 @@ module.exports = {
         DEBUG: DEBUG,
         PRODUCTION: PRODUCTION,
         BUILD_TIME: new Date().toString()
-      }),
-      new CleanWebpackPlugin([
-        path.join(__dirname, 'dist')
-      ]),
+      })
     ])
     .concat(PRODUCTION ? [
       // additional plugins for production environment
