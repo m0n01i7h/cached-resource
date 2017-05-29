@@ -156,7 +156,7 @@ export class ResourceService {
         );
     }
 
-    if (!this.config.httpOnly && actionConfig.httpOnly) {
+    if (!this.config.httpOnly && !actionConfig.httpOnly) {
       resource.$storagePromise = this.ready.promise
         .then<any>(() => actionConfig.isArray
           ? this.cache.findAll(params, resource as ResourceList)
@@ -243,7 +243,7 @@ export class ResourceService {
     const httpParams = getParams(_.assign({}, this.config.params, params), resource);
 
     if (!this.config.httpOnly && (resource.$new || actionConfig.localOnly)) {
-      resource.$httpPromise = this.ready.promise
+      resource.$storagePromise = this.ready.promise
         .then(() => Promise.all([
           this.cache.remove(resource.$query || cacheParams),
           this.scheduler.removeAction(resource.$query || cacheParams),
