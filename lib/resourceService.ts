@@ -93,16 +93,21 @@ export class ResourceService {
       body
     );
 
+    if ('httpOnly' in this.config) {
+      actionConfig.httpOnly = this.config.httpOnly;
+      actionConfig.localOnly = !this.config.httpOnly;
+    }
+
     const resource: ResourceList | Resource = actionConfig.isArray
       ? new ResourceList()
       : body instanceof Resource ? body : new Resource(body)
       ;
 
-    if (!this.config.httpOnly && actionConfig.localOnly) {
+    if (actionConfig.localOnly) {
       resource.$httpPromise = Promise.reject<ResourceBase>(new Error('This action is localOnly'));
     }
 
-    if (this.config.httpOnly || actionConfig.httpOnly) {
+    if (actionConfig.httpOnly) {
       resource.$storagePromise = Promise.reject<ResourceBase>(new Error('This action is httpOnly'));
     }
 
@@ -145,7 +150,7 @@ export class ResourceService {
   /** @internal */
   private invokeGetAction(url: string, params: {} = {}, actionConfig: ActionMetadata, resource: Resource | ResourceList) {
 
-    if (this.config.httpOnly || !actionConfig.localOnly) {
+    if (!actionConfig.localOnly) {
       resource.$httpPromise = this.ready.promise
         .then(() => this.config.networkState.isOnline
           // Perform request if online
@@ -156,7 +161,7 @@ export class ResourceService {
         );
     }
 
-    if (!this.config.httpOnly && !actionConfig.httpOnly) {
+    if (!actionConfig.httpOnly) {
       resource.$storagePromise = this.ready.promise
         .then<any>(() => actionConfig.isArray
           ? this.cache.findAll(params, resource as ResourceList)
@@ -178,7 +183,7 @@ export class ResourceService {
       resource.$query = cacheParams;
     }
 
-    if (this.config.httpOnly || !actionConfig.localOnly) {
+    if (!actionConfig.localOnly) {
       resource.$httpPromise = this.ready.promise
         .then(() => this.config.networkState.isOnline
           // Perform request if online
@@ -194,8 +199,8 @@ export class ResourceService {
                 return;
               }
 
-              await this.cache.replaceInArray(httpParams, cacheParams, resource as Resource);
               await this.cache.remove(cacheParams);
+              await this.cache.replaceInArray(httpParams, cacheParams, resource as Resource);
             })
             .catch(err => this.enqueueAction(action, err, actionConfig, cacheParams, httpParams))
           // Otherwise create pending action
@@ -204,7 +209,7 @@ export class ResourceService {
         .then(() => resource);
     }
 
-    if (!this.config.httpOnly && !actionConfig.httpOnly) {
+    if (!actionConfig.httpOnly) {
       resource.$storagePromise = this.ready.promise
         .then(() => this.cache.saveOne(httpParams, cacheParams, resource));
     }
@@ -217,7 +222,7 @@ export class ResourceService {
     const cacheParams = getRandomParams(_.assign({}, this.config.params, params), resource);
     const httpParams = getParams(_.assign({}, this.config.params, params), resource);
 
-    if (this.config.httpOnly || !actionConfig.localOnly) {
+    if (!actionConfig.localOnly) {
       resource.$httpPromise = this.ready.promise
         .then(() => this.config.networkState.isOnline
           // Perform request if online
@@ -229,7 +234,7 @@ export class ResourceService {
         );
     }
 
-    if (!this.config.httpOnly && !actionConfig.httpOnly) {
+    if (!actionConfig.httpOnly) {
       resource.$storagePromise = this.ready.promise
         .then(() => this.cache.saveOne(httpParams, cacheParams, resource));
     }
@@ -242,7 +247,7 @@ export class ResourceService {
     const cacheParams = getParams(this.config.params, resource);
     const httpParams = getParams(_.assign({}, this.config.params, params), resource);
 
-    if (!this.config.httpOnly && (resource.$new || actionConfig.localOnly)) {
+    if (resource.$new || actionConfig.localOnly) {
       resource.$storagePromise = this.ready.promise
         .then(() => Promise.all([
           this.cache.remove(resource.$query || cacheParams),
@@ -257,7 +262,7 @@ export class ResourceService {
             .then(async (res) => {
               _.assign(resource, { $removed: true });
 
-              if (!this.config.httpOnly && !actionConfig.httpOnly) {
+              if (!actionConfig.httpOnly) {
                 await this.cache.removeFromArrays([resource.$query || cacheParams]);
                 await this.cache.remove(cacheParams);
               }
@@ -270,7 +275,7 @@ export class ResourceService {
         );
     }
 
-    if (!this.config.httpOnly && !actionConfig.httpOnly) {
+    if (!actionConfig.httpOnly) {
       resource.$storagePromise = this.ready.promise
         .then(() => this.cache.removeFromArrays([resource.$query || cacheParams]))
         .then(() => resource);
@@ -315,7 +320,9 @@ export class ResourceService {
       }
     }
 
-    if (!this.config.httpOnly && !config.httpOnly) {
+    _.remove(resource, item => !_.find(data, getParams(this.config.params, item)));
+
+    if (!config.httpOnly) {
       await this.cache.saveAll(httpParams, resource);
     }
 
@@ -333,7 +340,7 @@ export class ResourceService {
     // indicate resource has server origin
     _.assign(resource, { $fromCache: false });
 
-    if (!this.config.httpOnly && !config.httpOnly && this.config.autoCompact) {
+    if (!config.httpOnly && this.config.autoCompact) {
       await this.compact();
     }
 
@@ -345,7 +352,7 @@ export class ResourceService {
     _.assign(resource, data, { $fromCache: false });
     const cacheParams = getParams(this.config.params, resource);
 
-    if (this.config.httpOnly || config.httpOnly) {
+    if (config.httpOnly) {
       return resource;
     }
 
@@ -356,7 +363,7 @@ export class ResourceService {
   private async enqueueAction(action: string, err: AxiosResponse, actionConfig: ActionMetadata, cacheParams: {}, httpParams: {}) {
 
     // skip adding pending action for httpOnly actions
-    if (this.config.httpOnly || actionConfig.httpOnly) {
+    if (actionConfig.httpOnly) {
       throw err;
     }
 
