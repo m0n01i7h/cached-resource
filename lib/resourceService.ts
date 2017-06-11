@@ -199,8 +199,10 @@ export class ResourceService {
                 return;
               }
 
-              await this.cache.remove(cacheParams);
-              await this.cache.replaceInArray(httpParams, cacheParams, resource as Resource);
+              if (!actionConfig.httpOnly) {
+                await this.cache.remove(cacheParams);
+                await this.cache.replaceInArray(httpParams, cacheParams, resource as Resource);
+              }
             })
             .catch(err => this.enqueueAction(action, err, actionConfig, cacheParams, httpParams))
           // Otherwise create pending action
